@@ -1,0 +1,212 @@
+---
+title: no-await-in-loop
+description: Disallow await inside of loops
+---
+
+# no-await-in-loop
+
+Performing `await` operations sequentially in a loop prevents taking advantage of the parallelization benefits of async/await.
+
+<Note>
+**Rule Type:** Problem  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+Using `await` inside a loop means each iteration must complete before the next one starts. Usually, you can refactor this code to create all promises at once, then use `Promise.all()` to wait for them all to complete in parallel.
+
+### Sequential vs Parallel
+
+```js
+// Bad: Sequential - each iteration waits for the previous one
+async function foo(things) {
+  const results = [];
+  for (const thing of things) {
+    results.push(await doAsyncWork(thing)); // 3 seconds total for 3 items
+  }
+  return results;
+}
+
+// Good: Parallel - all operations start immediately
+async function foo(things) {
+  const promises = [];
+  for (const thing of things) {
+    promises.push(doAsyncWork(thing)); // 1 second total for 3 items
+  }
+  return await Promise.all(promises);
+}
+```
+
+## Rule Details
+
+This rule disallows the use of `await` within loop bodies.
+
+### Error Handling Benefits
+
+Parallel execution also improves error handling by preventing unhandled promise rejections:
+
+```js
+// Bad: Later rejections become unhandled
+async function foo() {
+    const arrayOfPromises = somethingThatCreatesAnArrayOfPromises();
+    for (const promise of arrayOfPromises) {
+        const value = await promise; // If this throws, remaining promises become unhandled
+        console.log(value);
+    }
+}
+
+// Good: All rejections can be caught
+async function foo() {
+    const arrayOfPromises = somethingThatCreatesAnArrayOfPromises();
+    const arrayOfValues = await Promise.all(arrayOfPromises); // Catches all rejections
+    for (const value of arrayOfValues) {
+        console.log(value);
+    }
+}
+```
+
+## Examples
+
+### Incorrect Code
+
+```js
+// Awaiting in a for-of loop
+async function foo(things) {
+  const results = [];
+  for (const thing of things) {
+    results.push(await doAsyncWork(thing)); // Error
+  }
+  return results;
+}
+
+// Awaiting in a for loop
+async function bar(items) {
+  for (let i = 0; i < items.length; i++) {
+    await processItem(items[i]); // Error
+  }
+}
+
+// Await using in for loop
+async function baz(things) {
+  for (const thing of things) {
+    await using resource = getAsyncResource(thing); // Error
+  }
+}
+```
+
+### Correct Code
+
+```js
+// Create all promises, then await them together
+async function foo(things) {
+  const promises = [];
+  for (const thing of things) {
+    promises.push(doAsyncWork(thing)); // No await here
+  }
+  const results = await Promise.all(promises);
+  return results;
+}
+
+// Or use map for a more concise version
+async function foo(things) {
+  return await Promise.all(
+    things.map(thing => doAsyncWork(thing))
+  );
+}
+
+// Await outside the loop
+async function bar(items) {
+  const promises = items.map(item => processItem(item));
+  await Promise.all(promises);
+}
+```
+
+## When Not to Use It
+
+There are legitimate cases where sequential `await` is necessary:
+
+### Serial Operations
+
+<Tip>
+It's safe to disable this rule when iterations actually depend on each other.
+</Tip>
+
+#### Rate Limiting
+
+```js
+// Intentionally sequential to avoid rate limits
+async function makeUpdatesToRateLimitedApi(thingsToUpdate) {
+    for (const thing of thingsToUpdate) {
+        await updateThingWithRateLimitedApi(thing); // Must be sequential
+    }
+}
+```
+
+#### Resource Constraints
+
+```js
+// Sequential to avoid overwhelming system resources
+async function streamingProcess() {
+    for (let i = 0; i < 10; i++) {
+        await ramIntensiveAction(data[i]); // Can't run all at once
+    }
+}
+```
+
+#### Dependent Iterations
+
+```js
+// Output of one iteration is input to next
+async function loopIterationsDependOnEachOther() {
+    let previousResult = null;
+    for (let i = 0; i < 10; i++) {
+        const result = await doSomething(i, previousResult);
+        if (someCondition(result)) {
+            break;
+        }
+        previousResult = result;
+    }
+}
+```
+
+#### Intentional Delays
+
+```js
+// Countdown that must be sequential
+async function printCountdown() {
+    for (let i = 10; i >= 0; i--) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log(i);
+    }
+}
+```
+
+#### File System Operations
+
+```js
+// Writing to file must be sequential
+async function writeNumbersToFile() {
+    for (let i = 0; i < 100; i++) {
+        await fileWriteStream.write(i + "\n"); // Parallel would garble output
+    }
+}
+```
+
+## Disabling for Specific Cases
+
+When you have a legitimate use case, disable the rule with a comment:
+
+```js
+/* eslint-disable no-await-in-loop */
+for (const item of items) {
+    // Rate limiting requires sequential processing
+    await processWithRateLimit(item);
+}
+/* eslint-enable no-await-in-loop */
+```
+
+## Related Rules
+
+- [require-atomic-updates](/rules/require-atomic-updates)
+- [no-async-promise-executor](/rules/no-async-promise-executor)

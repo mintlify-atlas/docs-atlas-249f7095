@@ -1,0 +1,265 @@
+---
+title: camelcase
+description: Enforce camelCase naming convention
+---
+
+# camelcase
+
+Enforce camelCase naming convention for variables and properties.
+
+<Note>
+**Rule Type:** Suggestion  
+**Fixable:** No
+</Note>
+
+## Rule Details
+
+This rule enforces camelCase naming: `variableName` instead of `variable_name`.
+
+It ignores:
+- Leading and trailing underscores
+- ALL_CAPS constants
+- Destructured property names (with option)
+- Import names (with option)
+
+## Examples
+
+### Incorrect Code
+
+```js
+import { no_camelcased } from "external-module";
+
+const my_favorite_color = "#112C85";
+
+function do_something() {
+    // ...
+}
+
+obj.do_something = function() {
+    // ...
+};
+
+function foo({ no_camelcased }) {
+    // ...
+}
+
+const obj = {
+    my_pref: 1
+};
+```
+
+### Correct Code
+
+```js
+import { no_camelcased as camelCased } from "external-module";
+
+const myFavoriteColor = "#112C85";
+const _myFavoriteColor = "#112C85";  // Leading underscore OK
+const MY_FAVORITE_COLOR = "#112C85";  // ALL_CAPS OK
+
+function doSomething() {
+    // ...
+}
+
+obj.do_something();  // Method call OK
+
+const { category_id: categoryId } = query;  // Rename destructured
+
+function foo({ isCamelCased }) {
+    // ...
+}
+```
+
+## Options
+
+### `properties`
+
+- `"always"` (default) - Check property names
+- `"never"` - Don't check property names
+
+```js
+// With { "properties": "never" }
+const obj = {
+    my_pref: 1  // OK
+};
+obj.foo_bar = "baz";  // OK
+```
+
+### `ignoreDestructuring`
+
+**Default:** `false`
+
+When `true`, don't check destructured identifiers:
+
+```js
+// With { "ignoreDestructuring": true }
+const { category_id } = query;  // OK
+const { category_name = 1 } = query;  // OK
+```
+
+<Warning>
+This only affects the destructuring itself, not later uses of the variable.
+</Warning>
+
+### `ignoreImports`
+
+**Default:** `false`
+
+When `true`, don't check ES2015 imports:
+
+```js
+// With { "ignoreImports": true }
+import { snake_cased } from 'mod';  // OK
+```
+
+### `ignoreGlobals`
+
+**Default:** `false`
+
+When `true`, don't check global variables:
+
+```js
+/* global no_camelcased */
+
+// With { "ignoreGlobals": true }
+const foo = no_camelcased;  // OK
+```
+
+### `allow`
+
+**Type:** `string[]`
+
+Array of property names to allow (supports regex):
+
+```js
+// With { "allow": ["UNSAFE_componentWillMount"] }
+function UNSAFE_componentWillMount() {  // OK
+    // ...
+}
+
+// With { "allow": ["^UNSAFE_"] }
+function UNSAFE_componentWillMount() {  // OK
+    // ...
+}
+function UNSAFE_componentWillReceiveProps() {  // OK
+    // ...
+}
+```
+
+## Configuration Examples
+
+```js
+// Default: Enforce camelCase everywhere
+{
+  "rules": {
+    "camelcase": "error"
+  }
+}
+
+// Don't check properties
+{
+  "rules": {
+    "camelcase": ["error", { 
+      "properties": "never" 
+    }]
+  }
+}
+
+// Allow destructuring snake_case
+{
+  "rules": {
+    "camelcase": ["error", { 
+      "ignoreDestructuring": true 
+    }]
+  }
+}
+
+// Allow snake_case imports
+{
+  "rules": {
+    "camelcase": ["error", { 
+      "ignoreImports": true 
+    }]
+  }
+}
+
+// Allow specific names
+{
+  "rules": {
+    "camelcase": ["error", { 
+      "allow": ["^UNSAFE_", "^DEPRECATED_"] 
+    }]
+  }
+}
+```
+
+## Common Patterns
+
+### API Responses
+
+```js
+// API returns snake_case
+const response = await fetch('/api/user');
+const data = await response.json();
+
+// Rename when destructuring
+const { 
+  first_name: firstName,
+  last_name: lastName,
+  user_id: userId 
+} = data;
+```
+
+### Database Columns
+
+```js
+// Database uses snake_case
+const rows = await db.query('SELECT user_id, first_name FROM users');
+
+// Map to camelCase
+const users = rows.map(row => ({
+  userId: row.user_id,
+  firstName: row.first_name
+}));
+```
+
+### Environment Variables
+
+```js
+// ENV vars are SCREAMING_SNAKE_CASE
+const API_KEY = process.env.API_KEY;  // OK - ALL_CAPS
+const { NODE_ENV } = process.env;  // OK - ALL_CAPS
+```
+
+### React Legacy Methods
+
+```js
+// With allow: ["^UNSAFE_"]
+class MyComponent extends React.Component {
+  UNSAFE_componentWillMount() {  // OK
+    // ...
+  }
+  
+  UNSAFE_componentWillReceiveProps() {  // OK
+    // ...
+  }
+}
+```
+
+## When Not to Use It
+
+Disable this rule if:
+- Your style guide uses snake_case
+- You're working with APIs that use snake_case
+- Your team hasn't agreed on naming conventions
+
+## TypeScript
+
+For TypeScript, you might also want:
+- `@typescript-eslint/naming-convention` - More powerful naming rules
+
+## Related Rules
+
+- [id-length](/rules/id-length)
+- [id-match](/rules/id-match)
+- [new-cap](/rules/new-cap)

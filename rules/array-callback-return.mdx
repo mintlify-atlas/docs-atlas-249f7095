@@ -1,0 +1,216 @@
+---
+title: array-callback-return
+description: Enforce return statements in callbacks of array methods
+---
+
+# array-callback-return
+
+Array methods like `map()`, `filter()`, and `reduce()` expect their callback functions to return a value. Forgetting to return a value is usually a mistake.
+
+<Note>
+**Rule Type:** Problem  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+If you forget to write a `return` statement in a callback for array methods, it's probably a mistake. The callback will return `undefined` which can cause unexpected behavior.
+
+```js
+// Example: This tries to create an index map but fails
+const indexMap = myArray.reduce(function(memo, item, index) {
+  memo[item] = index;
+  // Missing return statement!
+}, {}); // Error: cannot set property 'b' of undefined
+```
+
+## Rule Details
+
+This rule enforces that callbacks used in array methods return a value.
+
+### Array Methods Checked
+
+The rule checks callbacks for these array methods:
+
+- `Array.from()` / `Array.fromAsync()`
+- `Array.prototype.every()`
+- `Array.prototype.filter()`
+- `Array.prototype.find()` / `Array.prototype.findIndex()`
+- `Array.prototype.findLast()` / `Array.prototype.findLastIndex()`
+- `Array.prototype.flatMap()`
+- `Array.prototype.forEach()` (optional)
+- `Array.prototype.map()`
+- `Array.prototype.reduce()` / `Array.prototype.reduceRight()`
+- `Array.prototype.some()`
+- `Array.prototype.sort()` / `Array.prototype.toSorted()`
+
+## Examples
+
+### Incorrect Code
+
+```js
+// Missing return in reduce
+const indexMap = myArray.reduce(function(memo, item, index) {
+    memo[item] = index;
+}, {});
+
+// Conditional return without handling all paths
+const foo = Array.from(nodes, function(node) {
+    if (node.tagName === "DIV") {
+        return true;
+    }
+    // Missing return for non-DIV nodes
+});
+
+// Empty return (returns undefined)
+const bar = foo.filter(function(x) {
+    if (x) {
+        return true;
+    } else {
+        return; // Returns undefined
+    }
+});
+```
+
+### Correct Code
+
+```js
+// Proper return in reduce
+const indexMap = myArray.reduce(function(memo, item, index) {
+    memo[item] = index;
+    return memo; // Always return the accumulator
+}, {});
+
+// All code paths return a value
+const foo = Array.from(nodes, function(node) {
+    if (node.tagName === "DIV") {
+        return true;
+    }
+    return false; // Handle all cases
+});
+
+// Arrow function with implicit return
+const bar = foo.map(node => node.getAttribute("id"));
+```
+
+## Options
+
+This rule accepts an object with the following options:
+
+### `allowImplicit`
+
+**Type:** `boolean`  
+**Default:** `false`
+
+When `true`, allows callbacks to implicitly return `undefined` with a `return` statement containing no expression.
+
+```js
+// With { "allowImplicit": true }
+const undefAllTheThings = myArray.map(function(item) {
+    return; // OK: explicitly returning undefined
+});
+```
+
+### `checkForEach`
+
+**Type:** `boolean`  
+**Default:** `false`
+
+When `true`, this rule also reports `forEach` callbacks that return a value (since `forEach` ignores return values).
+
+<Warning>
+With `checkForEach: true`, returning values in forEach callbacks will be flagged as an error.
+</Warning>
+
+```js
+// With { "checkForEach": true } - INCORRECT
+myArray.forEach(function(item) {
+    return handleItem(item); // Error: forEach doesn't use return values
+});
+
+myArray.forEach(item => handleItem(item)); // Error: implicit return
+
+// CORRECT
+myArray.forEach(function(item) {
+    handleItem(item); // No return
+});
+
+myArray.forEach(function(item) {
+    if (item < 0) {
+        return; // OK: early return for control flow
+    }
+    handleItem(item);
+});
+```
+
+### `allowVoid`
+
+**Type:** `boolean`  
+**Default:** `false`
+
+When `true` and `checkForEach` is also `true`, allows using `void` operator in `forEach` callbacks.
+
+```js
+// With { "checkForEach": true, "allowVoid": true }
+myArray.forEach(item => void handleItem(item)); // OK
+
+myArray.forEach(item => {
+    return void handleItem(item); // OK
+});
+```
+
+## Configuration Examples
+
+```js
+// Default: Check array methods, but not forEach
+{
+  "rules": {
+    "array-callback-return": "error"
+  }
+}
+
+// Allow implicit undefined returns
+{
+  "rules": {
+    "array-callback-return": ["error", { 
+      "allowImplicit": true 
+    }]
+  }
+}
+
+// Also check forEach callbacks
+{
+  "rules": {
+    "array-callback-return": ["error", { 
+      "checkForEach": true 
+    }]
+  }
+}
+
+// Check forEach but allow void operator
+{
+  "rules": {
+    "array-callback-return": ["error", { 
+      "checkForEach": true,
+      "allowVoid": true 
+    }]
+  }
+}
+```
+
+## When Not to Use It
+
+If you don't want to enforce return statements in array method callbacks, you can disable this rule.
+
+<Tip>
+If you want different behavior for `forEach` vs other array methods, use the `checkForEach` option to control this.
+</Tip>
+
+## Known Limitations
+
+This rule checks callback functions of methods with the given names, even if the object is not actually an array. This is unavoidable with static analysis.
+
+## Related Rules
+
+- [no-unused-expressions](/rules/no-unused-expressions)
+- [consistent-return](/rules/consistent-return)

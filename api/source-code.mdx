@@ -1,0 +1,590 @@
+---
+title: SourceCode
+description: Represents parsed JavaScript source code
+---
+
+The `SourceCode` class represents parsed source code and provides methods for working with the AST (Abstract Syntax Tree), tokens, comments, and source text.
+
+## Constructor
+
+```javascript
+const { SourceCode } = require("eslint");
+const sourceCode = new SourceCode(textOrConfig, ast);
+```
+
+<ParamField path="textOrConfig" type="string | object" required>
+  Either the source code text or a configuration object.
+
+  <Expandable title="config properties">
+    <ParamField path="text" type="string" required>
+      The source code text.
+    </ParamField>
+
+    <ParamField path="ast" type="ASTNode" required>
+      The Program node of the AST.
+    </ParamField>
+
+    <ParamField path="hasBOM" type="boolean">
+      Indicates if the text has a Unicode BOM.
+    </ParamField>
+
+    <ParamField path="parserServices" type="object">
+      Parser services provided by the parser.
+    </ParamField>
+
+    <ParamField path="scopeManager" type="ScopeManager">
+      The scope manager for the source code.
+    </ParamField>
+
+    <ParamField path="visitorKeys" type="object">
+      Visitor keys to traverse the AST.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="ast" type="ASTNode">
+  The Program node (when using the simple string constructor).
+</ParamField>
+
+## Properties
+
+### text
+
+```javascript
+const text = sourceCode.text;
+```
+
+<ResponseField name="text" type="string">
+  The full source code text.
+</ResponseField>
+
+### ast
+
+```javascript
+const ast = sourceCode.ast;
+```
+
+<ResponseField name="ast" type="ASTNode">
+  The Program node of the Abstract Syntax Tree.
+</ResponseField>
+
+### lines
+
+```javascript
+const lines = sourceCode.lines;
+```
+
+<ResponseField name="lines" type="string[]">
+  Array of lines in the source code (split by line breaks).
+</ResponseField>
+
+### hasBOM
+
+```javascript
+const hasBOM = sourceCode.hasBOM;
+```
+
+<ResponseField name="hasBOM" type="boolean">
+  Whether the source code has a Unicode Byte Order Mark.
+</ResponseField>
+
+### parserServices
+
+```javascript
+const services = sourceCode.parserServices;
+```
+
+<ResponseField name="parserServices" type="object">
+  Additional services provided by the parser (e.g., TypeScript type information).
+</ResponseField>
+
+### scopeManager
+
+```javascript
+const scopeManager = sourceCode.scopeManager;
+```
+
+<ResponseField name="scopeManager" type="ScopeManager">
+  The scope manager containing scope analysis results.
+</ResponseField>
+
+### visitorKeys
+
+```javascript
+const visitorKeys = sourceCode.visitorKeys;
+```
+
+<ResponseField name="visitorKeys" type="object">
+  Visitor keys for traversing the AST.
+</ResponseField>
+
+## Methods
+
+### getText()
+
+Gets the source code text for a node or token.
+
+```javascript
+const text = sourceCode.getText(nodeOrToken, beforeCount, afterCount);
+```
+
+<ParamField path="nodeOrToken" type="ASTNode | Token">
+  The node or token to get text for. If omitted, returns entire source.
+</ParamField>
+
+<ParamField path="beforeCount" type="number" default="0">
+  Number of characters before the node to include.
+</ParamField>
+
+<ParamField path="afterCount" type="number" default="0">
+  Number of characters after the node to include.
+</ParamField>
+
+<ResponseField name="text" type="string">
+  The source code text.
+</ResponseField>
+
+### getLines()
+
+Gets the source code lines.
+
+```javascript
+const lines = sourceCode.getLines();
+```
+
+<ResponseField name="lines" type="string[]">
+  Array of source code lines.
+</ResponseField>
+
+### getAllComments()
+
+Gets all comments in the source code.
+
+```javascript
+const comments = sourceCode.getAllComments();
+```
+
+<ResponseField name="comments" type="Token[]">
+  Array of comment tokens.
+</ResponseField>
+
+### getComments()
+
+Gets comments for a specific node.
+
+```javascript
+const comments = sourceCode.getComments(node);
+```
+
+<ParamField path="node" type="ASTNode" required>
+  The node to get comments for.
+</ParamField>
+
+<ResponseField name="comments" type="object">
+  <Expandable title="properties">
+    <ResponseField name="leading" type="Token[]">
+      Comments before the node.
+    </ResponseField>
+
+    <ResponseField name="trailing" type="Token[]">
+      Comments after the node.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### getLoc()
+
+Gets the location information for a node or token.
+
+```javascript
+const loc = sourceCode.getLoc(nodeOrToken);
+```
+
+<ParamField path="nodeOrToken" type="ASTNode | Token" required>
+  The node or token.
+</ParamField>
+
+<ResponseField name="loc" type="object">
+  <Expandable title="properties">
+    <ResponseField name="start" type="object">
+      Start position with `line` and `column` (1-based).
+    </ResponseField>
+
+    <ResponseField name="end" type="object">
+      End position with `line` and `column` (1-based).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### getRange()
+
+Gets the range for a node or token.
+
+```javascript
+const range = sourceCode.getRange(nodeOrToken);
+```
+
+<ParamField path="nodeOrToken" type="ASTNode | Token" required>
+  The node or token.
+</ParamField>
+
+<ResponseField name="range" type="[number, number]">
+  The [start, end] character indices (0-based).
+</ResponseField>
+
+### getTokens()
+
+Gets tokens for a node.
+
+```javascript
+const tokens = sourceCode.getTokens(node, beforeCount, afterCount);
+```
+
+<ParamField path="node" type="ASTNode" required>
+  The node to get tokens for.
+</ParamField>
+
+<ParamField path="beforeCount" type="number" default="0">
+  Number of tokens before the node to include.
+</ParamField>
+
+<ParamField path="afterCount" type="number" default="0">
+  Number of tokens after the node to include.
+</ParamField>
+
+<ResponseField name="tokens" type="Token[]">
+  Array of tokens.
+</ResponseField>
+
+### getFirstToken()
+
+Gets the first token of a node.
+
+```javascript
+const token = sourceCode.getFirstToken(node, options);
+```
+
+<ParamField path="node" type="ASTNode" required>
+  The node.
+</ParamField>
+
+<ParamField path="options" type="number | function | object">
+  Skip count, filter function, or options object.
+</ParamField>
+
+<ResponseField name="token" type="Token | null">
+  The first token, or null if not found.
+</ResponseField>
+
+### getLastToken()
+
+Gets the last token of a node.
+
+```javascript
+const token = sourceCode.getLastToken(node, options);
+```
+
+<ParamField path="node" type="ASTNode" required>
+  The node.
+</ParamField>
+
+<ParamField path="options" type="number | function | object">
+  Skip count, filter function, or options object.
+</ParamField>
+
+<ResponseField name="token" type="Token | null">
+  The last token, or null if not found.
+</ResponseField>
+
+### getTokenBefore()
+
+Gets the token before a node or token.
+
+```javascript
+const token = sourceCode.getTokenBefore(nodeOrToken, options);
+```
+
+<ParamField path="nodeOrToken" type="ASTNode | Token" required>
+  The node or token.
+</ParamField>
+
+<ParamField path="options" type="number | function | object">
+  Skip count, filter function, or options object.
+</ParamField>
+
+<ResponseField name="token" type="Token | null">
+  The previous token, or null if not found.
+</ResponseField>
+
+### getTokenAfter()
+
+Gets the token after a node or token.
+
+```javascript
+const token = sourceCode.getTokenAfter(nodeOrToken, options);
+```
+
+<ParamField path="nodeOrToken" type="ASTNode | Token" required>
+  The node or token.
+</ParamField>
+
+<ParamField path="options" type="number | function | object">
+  Skip count, filter function, or options object.
+</ParamField>
+
+<ResponseField name="token" type="Token | null">
+  The next token, or null if not found.
+</ResponseField>
+
+### getFirstTokenBetween()
+
+Gets the first token between two nodes or tokens.
+
+```javascript
+const token = sourceCode.getFirstTokenBetween(left, right, options);
+```
+
+<ParamField path="left" type="ASTNode | Token" required>
+  The left node or token.
+</ParamField>
+
+<ParamField path="right" type="ASTNode | Token" required>
+  The right node or token.
+</ParamField>
+
+<ParamField path="options" type="number | function | object">
+  Skip count, filter function, or options object.
+</ParamField>
+
+<ResponseField name="token" type="Token | null">
+  The first token between, or null if not found.
+</ResponseField>
+
+### getTokensBetween()
+
+Gets all tokens between two nodes or tokens.
+
+```javascript
+const tokens = sourceCode.getTokensBetween(left, right, padding);
+```
+
+<ParamField path="left" type="ASTNode | Token" required>
+  The left node or token.
+</ParamField>
+
+<ParamField path="right" type="ASTNode | Token" required>
+  The right node or token.
+</ParamField>
+
+<ParamField path="padding" type="number" default="0">
+  Number of extra tokens to include on each side.
+</ParamField>
+
+<ResponseField name="tokens" type="Token[]">
+  Array of tokens between the two nodes/tokens.
+</ResponseField>
+
+### getTokenByRangeStart()
+
+Gets a token by its range start position.
+
+```javascript
+const token = sourceCode.getTokenByRangeStart(index, options);
+```
+
+<ParamField path="index" type="number" required>
+  The range start index.
+</ParamField>
+
+<ParamField path="options" type="object">
+  Options for the search.
+</ParamField>
+
+<ResponseField name="token" type="Token | null">
+  The token at that position, or null.
+</ResponseField>
+
+### getNodeByRangeIndex()
+
+Gets the deepest node containing a given index.
+
+```javascript
+const node = sourceCode.getNodeByRangeIndex(index);
+```
+
+<ParamField path="index" type="number" required>
+  The character index.
+</ParamField>
+
+<ResponseField name="node" type="ASTNode | null">
+  The deepest node containing the index, or null.
+</ResponseField>
+
+### isSpaceBetween()
+
+Checks if there is whitespace between two nodes or tokens.
+
+```javascript
+const hasSpace = sourceCode.isSpaceBetween(first, second);
+```
+
+<ParamField path="first" type="ASTNode | Token" required>
+  The first node or token.
+</ParamField>
+
+<ParamField path="second" type="ASTNode | Token" required>
+  The second node or token.
+</ParamField>
+
+<ResponseField name="hasSpace" type="boolean">
+  True if there is whitespace between them.
+</ResponseField>
+
+### getScope()
+
+Gets the scope for a node.
+
+```javascript
+const scope = sourceCode.getScope(node);
+```
+
+<ParamField path="node" type="ASTNode" required>
+  The node to get the scope for.
+</ParamField>
+
+<ResponseField name="scope" type="Scope">
+  The scope object.
+</ResponseField>
+
+### markVariableAsUsed()
+
+Marks a variable as used in a specific scope.
+
+```javascript
+const found = sourceCode.markVariableAsUsed(name, node);
+```
+
+<ParamField path="name" type="string" required>
+  The variable name.
+</ParamField>
+
+<ParamField path="node" type="ASTNode">
+  The node to start the search from.
+</ParamField>
+
+<ResponseField name="found" type="boolean">
+  True if the variable was found and marked.
+</ResponseField>
+
+### getAncestors()
+
+Gets the ancestor nodes of a given node.
+
+```javascript
+const ancestors = sourceCode.getAncestors(node);
+```
+
+<ParamField path="node" type="ASTNode" required>
+  The node.
+</ParamField>
+
+<ResponseField name="ancestors" type="ASTNode[]">
+  Array of ancestor nodes from closest to farthest.
+</ResponseField>
+
+### getDeclaredVariables()
+
+Gets variables declared by a node.
+
+```javascript
+const variables = sourceCode.getDeclaredVariables(node);
+```
+
+<ParamField path="node" type="ASTNode" required>
+  The node.
+</ParamField>
+
+<ResponseField name="variables" type="Variable[]">
+  Array of declared variables.
+</ResponseField>
+
+## Examples
+
+<Tabs>
+  <Tab title="Getting Text">
+    ```javascript
+    const { SourceCode } = require("eslint");
+
+    // Assuming you have an AST node
+    const text = sourceCode.getText(node);
+    console.log(text);
+
+    // Get text with surrounding context
+    const textWithContext = sourceCode.getText(node, 2, 2);
+    console.log(textWithContext);
+    ```
+  </Tab>
+  <Tab title="Working with Tokens">
+    ```javascript
+    // Get all tokens for a node
+    const tokens = sourceCode.getTokens(node);
+
+    // Get first and last tokens
+    const first = sourceCode.getFirstToken(node);
+    const last = sourceCode.getLastToken(node);
+
+    // Get tokens between two nodes
+    const between = sourceCode.getTokensBetween(leftNode, rightNode);
+
+    console.log(tokens, first, last, between);
+    ```
+  </Tab>
+  <Tab title="Checking Spacing">
+    ```javascript
+    // Check if there's whitespace between tokens
+    const hasSpace = sourceCode.isSpaceBetween(token1, token2);
+
+    if (!hasSpace) {
+      context.report({
+        node,
+        message: "Expected space between tokens."
+      });
+    }
+    ```
+  </Tab>
+  <Tab title="Scope Analysis">
+    ```javascript
+    // Get the scope for a node
+    const scope = sourceCode.getScope(node);
+
+    // Get declared variables
+    const variables = sourceCode.getDeclaredVariables(node);
+
+    // Mark a variable as used
+    sourceCode.markVariableAsUsed("myVar", node);
+
+    console.log(scope, variables);
+    ```
+  </Tab>
+</Tabs>
+
+## Usage in Rules
+
+The `SourceCode` object is available in rules through the `context` object:
+
+```javascript
+module.exports = {
+  create(context) {
+    const sourceCode = context.sourceCode;
+
+    return {
+      Identifier(node) {
+        const text = sourceCode.getText(node);
+        const token = sourceCode.getFirstToken(node);
+        
+        // Your rule logic here
+      }
+    };
+  }
+};
+```

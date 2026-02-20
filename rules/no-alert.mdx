@@ -1,0 +1,292 @@
+---
+title: no-alert
+description: Disallow the use of alert, confirm, and prompt
+---
+
+# no-alert
+
+JavaScript's `alert`, `confirm`, and `prompt` functions are obtrusive UI elements and should be replaced with custom UI. They're also often leftover debugging code.
+
+<Note>
+**Rule Type:** Suggestion  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+- **Debugging remnants**: `alert()` is often used during debugging and should be removed
+- **Poor UX**: Browser dialogs are intrusive and block the entire page
+- **Limited customization**: Can't match your app's design
+- **Not testable**: Hard to test in automated tests
+
+## Rule Details
+
+This rule warns about `alert`, `prompt`, and `confirm` function calls that aren't shadowed by local variables.
+
+## Examples
+
+### Incorrect Code
+
+```js
+alert("here!");
+
+confirm("Are you sure?");
+
+prompt("What's your name?", "John Doe");
+```
+
+### Correct Code
+
+```js
+// Custom implementations
+customAlert("Something happened!");
+
+customConfirm("Are you sure?");
+
+customPrompt("Who are you?");
+
+// Shadowed by local variable
+function foo() {
+    const alert = myCustomLib.customAlert;
+    alert(); // OK - not the global alert
+}
+
+// Use console for debugging
+console.log("Debug information");
+console.warn("Warning message");
+```
+
+## Modern Alternatives
+
+### Custom Modal Libraries
+
+<Tip>
+Use a modal library that matches your app's design and is non-blocking.
+</Tip>
+
+```js
+// Instead of alert
+import { toast } from 'your-toast-library';
+toast.info('Operation completed');
+
+// Instead of confirm  
+import { modal } from 'your-modal-library';
+const confirmed = await modal.confirm({
+  title: 'Are you sure?',
+  message: 'This action cannot be undone'
+});
+
+// Instead of prompt
+const name = await modal.prompt({
+  title: 'Enter your name',
+  defaultValue: 'John Doe'
+});
+```
+
+### React Example
+
+```jsx
+// Wrong
+function deleteUser() {
+  if (confirm('Delete this user?')) {
+    api.deleteUser(userId);
+  }
+}
+
+// Right - Custom modal
+function deleteUser() {
+  showModal({
+    title: 'Confirm Delete',
+    message: 'Are you sure you want to delete this user?',
+    onConfirm: () => api.deleteUser(userId),
+    onCancel: () => {}
+  });
+}
+```
+
+### Toast Notifications
+
+```js
+// Instead of alert for notifications
+alert('Changes saved');
+
+// Use toast notifications
+toast.success('Changes saved successfully', {
+  duration: 3000,
+  position: 'top-right'
+});
+```
+
+## Debugging Alternatives
+
+### Console Methods
+
+```js
+// Instead of alert for debugging
+alert(JSON.stringify(user));
+
+// Use console methods
+console.log('User:', user);
+console.table(users);
+console.dir(element);
+console.trace();
+```
+
+### Debugger Statement
+
+```js
+// Instead of alert to pause execution
+alert('Check value: ' + x);
+
+// Use debugger
+debugger; // Pauses execution in dev tools
+console.log('Value:', x);
+```
+
+### Logger Library
+
+```js
+import logger from 'your-logger';
+
+// Structured logging
+logger.debug('User action', { userId, action: 'click' });
+logger.info('Request completed', { duration: 150 });
+logger.error('Request failed', { error, userId });
+```
+
+## Common Patterns
+
+### Quick User Feedback
+
+```js
+// Wrong
+function saveData() {
+  api.save(data);
+  alert('Saved!');
+}
+
+// Right - Toast notification
+function saveData() {
+  api.save(data);
+  toast.success('Saved successfully!');
+}
+```
+
+### Confirmation Dialogs
+
+```js
+// Wrong
+function deleteItem(id) {
+  if (confirm('Delete this item?')) {
+    api.delete(id);
+  }
+}
+
+// Right - Custom modal
+async function deleteItem(id) {
+  const confirmed = await confirmDialog({
+    title: 'Delete Item',
+    message: 'This action cannot be undone',
+    confirmText: 'Delete',
+    cancelText: 'Cancel'
+  });
+  
+  if (confirmed) {
+    await api.delete(id);
+    toast.success('Item deleted');
+  }
+}
+```
+
+### User Input
+
+```js
+// Wrong
+function renameItem(id) {
+  const newName = prompt('Enter new name:');
+  if (newName) {
+    api.rename(id, newName);
+  }
+}
+
+// Right - Modal with form
+async function renameItem(id) {
+  const newName = await promptDialog({
+    title: 'Rename Item',
+    label: 'New name',
+    placeholder: 'Enter new name',
+    validate: (value) => value.length > 0
+  });
+  
+  if (newName) {
+    await api.rename(id, newName);
+    toast.success('Item renamed');
+  }
+}
+```
+
+## Testing Benefits
+
+<Warning>
+Browser alert dialogs are difficult to test in automated tests.
+</Warning>
+
+```js
+// Hard to test
+function processOrder() {
+  try {
+    placeOrder();
+    alert('Order placed!');
+  } catch (e) {
+    alert('Order failed');
+  }
+}
+
+// Easy to test
+function processOrder(notifier = toast) {
+  try {
+    placeOrder();
+    notifier.success('Order placed!');
+  } catch (e) {
+    notifier.error('Order failed');
+  }
+}
+
+// Test
+test('shows success message', () => {
+  const mockNotifier = { success: jest.fn() };
+  processOrder(mockNotifier);
+  expect(mockNotifier.success).toHaveBeenCalled();
+});
+```
+
+## When Not to Use It
+
+Disable this rule if:
+- You're writing quick prototypes or demos
+- You're in a legacy codebase that can't be updated
+- You're specifically building debugging tools
+
+For production code, this rule should be enabled.
+
+## Configuration
+
+```js
+{
+  "rules": {
+    "no-alert": "error"
+  }
+}
+
+// Warning instead of error
+{
+  "rules": {
+    "no-alert": "warn"
+  }
+}
+```
+
+## Related Rules
+
+- [no-console](/rules/no-console)
+- [no-debugger](/rules/no-debugger)

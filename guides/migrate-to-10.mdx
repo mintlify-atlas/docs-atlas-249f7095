@@ -1,0 +1,571 @@
+---
+title: Migrate to ESLint v10
+description: Complete migration guide for upgrading from ESLint v9 to v10 with breaking changes, code examples, and solutions
+---
+
+# Migrate to ESLint v10
+
+ESLint v10.0.0 is a major release with several breaking changes. This guide walks you through upgrading from v9.x to v10.x, with real examples and actionable steps.
+
+<Info>
+ESLint v10 was released on **February 6, 2026** and requires Node.js `^20.19.0 || ^22.13.0 || >=24`.
+</Info>
+
+## Quick Migration Checklist
+
+<Steps>
+  <Step title="Update Node.js">
+    Ensure you're running Node.js v20.19.0 or later:
+    
+    ```bash
+    node --version
+    ```
+    
+    If your version is older, upgrade to at least Node.js v20.19.0.
+  </Step>
+  
+  <Step title="Update ESLint">
+    Update ESLint to v10.x:
+    
+    ```bash
+    npm install eslint@latest --save-dev
+    ```
+  </Step>
+  
+  <Step title="Migrate Configuration">
+    Remove any eslintrc files and ensure you're using flat config (`eslint.config.js`).
+  </Step>
+  
+  <Step title="Remove Feature Flags">
+    Remove the `v10_config_lookup_from_file` flag from your configuration:
+    
+    ```bash
+    # Remove from CLI
+    --flag v10_config_lookup_from_file
+    
+    # Remove from environment
+    ESLINT_FLAGS="v10_config_lookup_from_file"
+    ```
+  </Step>
+  
+  <Step title="Test Your Configuration">
+    Run ESLint to verify everything works:
+    
+    ```bash
+    npx eslint .
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Breaking Changes
+
+### Node.js Version Requirements
+
+<Warning>
+**Breaking Change:** ESLint v10 drops support for Node.js versions < v20.19, v21, and v23.
+</Warning>
+
+ESLint v10 requires:
+- Node.js `^20.19.0`
+- Node.js `^22.13.0`  
+- Node.js `>=24`
+
+**Migration:**
+
+```bash
+# Check your Node.js version
+node --version
+
+# If < v20.19.0, upgrade Node.js
+nvm install 20.19.0
+nvm use 20.19.0
+```
+
+<Tip>
+If you cannot upgrade Node.js immediately, continue using ESLint v9.x until you can upgrade.
+</Tip>
+
+---
+
+### Configuration File Lookup
+
+<Warning>
+**Breaking Change:** Config file lookup now starts from the linted file's directory, not the current working directory.
+</Warning>
+
+In v9, ESLint looked for `eslint.config.js` starting from your current working directory. In v10, it starts from each linted file's directory and searches upward.
+
+**Before (v9 with CWD-based lookup):**
+```
+project/
+  ├── eslint.config.js    ← Always used
+  ├── src/
+  │   └── app.js
+  └── tests/
+      └── test.js
+```
+
+**After (v10 with file-based lookup):**
+```
+project/
+  ├── eslint.config.js    ← Used for all files
+  ├── src/
+  │   ├── eslint.config.js ← Used only for src/ files (if exists)
+  │   └── app.js
+  └── tests/
+      └── test.js
+```
+
+**Migration:**
+
+If you relied on the old behavior, explicitly specify your config file:
+
+```bash
+npx eslint --config ./eslint.config.js src/
+```
+
+---
+
+### ESLintrc Format Removed
+
+<Warning>
+**Breaking Change:** The legacy `.eslintrc` configuration format is no longer supported.
+</Warning>
+
+ESLint v10 only supports the flat config format (`eslint.config.js`).
+
+**Old Format (.eslintrc.json):**
+```json
+{
+  "extends": ["eslint:recommended"],
+  "rules": {
+    "no-unused-vars": "error"
+  },
+  "env": {
+    "node": true
+  }
+}
+```
+
+**New Format (eslint.config.js):**
+```javascript
+import js from "@eslint/js";
+
+export default [
+  js.configs.recommended,
+  {
+    files: ["**/*.js"],
+    languageOptions: {
+      globals: {
+        ...globalThis,
+        process: "readonly",
+        console: "readonly"
+      }
+    },
+    rules: {
+      "no-unused-vars": "error"
+    }
+  }
+];
+```
+
+**Remove These:**
+- `.eslintrc`
+- `.eslintrc.json`
+- `.eslintrc.js`
+- `.eslintrc.yml`
+- `eslintConfig` in `package.json`
+- `ESLINT_USE_FLAT_CONFIG` environment variable
+
+<Tip>
+See the [Configuration Migration Guide](https://eslint.org/docs/latest/use/configure/migration-guide) for detailed conversion steps.
+</Tip>
+
+---
+
+### JSX Reference Tracking
+
+<Info>
+**Enhancement:** ESLint now correctly tracks JSX references in scope analysis.
+</Info>
+
+Previously, ESLint didn't recognize JSX identifiers as references:
+
+**Example:**
+```jsx
+import { Card } from "./card.jsx";
+
+export function createCard(name) {
+  return <Card name={name} />; // v9: Card not recognized as "used"
+}
+```
+
+**Before v10:**
+- `no-unused-vars` would report `Card` as unused ❌
+- Removing the import wouldn't trigger `no-undef` ❌
+
+**After v10:**
+- `<Card>` is correctly recognized as a reference to `Card` ✅
+- Scope analysis works correctly for JSX ✅
+
+**Migration:**
+
+1. **Remove workaround rules** like `@eslint-react/jsx-uses-vars`:
+
+```javascript
+// Remove this from your config
+import eslintReact from "@eslint-react/eslint-plugin";
+
+export default [
+  {
+    rules: {
+      "@eslint-react/jsx-uses-vars": "error" // ❌ No longer needed
+    }
+  }
+];
+```
+
+2. **Fix new linting errors** that may appear in JSX files
+
+---
+
+### eslint-env Comments Now Error
+
+<Warning>
+**Breaking Change:** `/* eslint-env */` comments now cause linting errors.
+</Warning>
+
+**This will now fail:**
+```javascript
+/* eslint-env node */
+const fs = require('fs');
+```
+
+**Error message:**
+```
+error: /* eslint-env */ comments are no longer supported at file.js:1:1:
+> 1 | /* eslint-env node */
+    | ^
+```
+
+**Migration:**
+
+Remove `eslint-env` comments and configure globals in `eslint.config.js`:
+
+```javascript
+import globals from "globals";
+
+export default [
+  {
+    languageOptions: {
+      globals: {
+        ...globals.node
+      }
+    }
+  }
+];
+```
+
+---
+
+### Updated eslint:recommended
+
+<Info>
+Three new rules are enabled in `eslint:recommended`.
+</Info>
+
+New rules in v10:
+- `no-unassigned-vars` - Disallow variables that are never assigned
+- `no-useless-assignment` - Disallow assignments with no effect
+- `preserve-caught-error` - Require catch parameters to be used
+
+**Example violations:**
+```javascript
+// no-unassigned-vars
+let x; // ❌ Never assigned
+console.log(x);
+
+// no-useless-assignment  
+let y = 1;
+y = 2; // ❌ Overwritten before use
+y = 3;
+console.log(y);
+
+// preserve-caught-error
+try {
+  riskyOperation();
+} catch (err) { // ❌ Parameter not used
+  console.log("Error occurred");
+}
+```
+
+**To disable:**
+```javascript
+export default [
+  {
+    rules: {
+      "no-unassigned-vars": "off",
+      "no-useless-assignment": "off",
+      "preserve-caught-error": "off"
+    }
+  }
+];
+```
+
+---
+
+## API Changes for Plugin Developers
+
+### RuleTester Stricter Validation
+
+<Warning>
+Valid test cases cannot have `errors` or `output` properties.
+</Warning>
+
+**This will now fail:**
+```javascript
+ruleTester.run("my-rule", rule, {
+  valid: [
+    {
+      code: "const x = 1;",
+      errors: 0,  // ❌ Not allowed
+      output: "const x = 1;" // ❌ Not allowed
+    }
+  ],
+  invalid: []
+});
+```
+
+**Correct usage:**
+```javascript
+ruleTester.run("my-rule", rule, {
+  valid: [
+    "const x = 1;" // ✅ Simple string
+  ],
+  invalid: [
+    {
+      code: "var x = 1;",
+      output: "const x = 1;",
+      errors: [{ message: "Use const" }]
+    }
+  ]
+});
+```
+
+---
+
+### Removed context Methods
+
+<Warning>
+Deprecated `context` methods have been removed.
+</Warning>
+
+**Migration table:**
+
+| Removed | Replacement |
+|---------|-------------|
+| `context.getCwd()` | `context.cwd` |
+| `context.getFilename()` | `context.filename` |
+| `context.getPhysicalFilename()` | `context.physicalFilename` |
+| `context.getSourceCode()` | `context.sourceCode` |
+| `context.parserOptions` | `context.languageOptions` |
+
+**Example migration:**
+```javascript
+// Before
+module.exports = {
+  create(context) {
+    const filename = context.getFilename();
+    const sourceCode = context.getSourceCode();
+    const cwd = context.getCwd();
+    
+    // ...
+  }
+};
+
+// After
+module.exports = {
+  create(context) {
+    const filename = context.filename;
+    const sourceCode = context.sourceCode;
+    const cwd = context.cwd;
+    
+    // ...
+  }
+};
+```
+
+<Tip>
+Use the [`eslint-transforms`](https://www.npmjs.com/package/eslint-transforms) utility to automate this migration:
+
+```bash
+npm install -g eslint-transforms
+eslint-transforms v9-rule-migration rules/
+```
+</Tip>
+
+---
+
+### Removed SourceCode Methods
+
+<Warning>
+Deprecated `SourceCode` methods have been removed.
+</Warning>
+
+| Removed | Replacement |
+|---------|-------------|
+| `getTokenOrCommentBefore(node, skip)` | `getTokenBefore(node, { includeComments: true, skip })` |
+| `getTokenOrCommentAfter(node, skip)` | `getTokenAfter(node, { includeComments: true, skip })` |
+| `isSpaceBetweenTokens(first, second)` | `isSpaceBetween(first, second)` |
+| `getJSDocComment(node)` | No replacement |
+
+**Example:**
+```javascript
+// Before
+const token = sourceCode.getTokenOrCommentBefore(node, 1);
+const hasSpace = sourceCode.isSpaceBetweenTokens(first, second);
+
+// After
+const token = sourceCode.getTokenBefore(node, { includeComments: true, skip: 1 });
+const hasSpace = sourceCode.isSpaceBetween(first, second);
+```
+
+---
+
+## Dependency Updates
+
+### Jiti Version Requirement
+
+<Info>
+If using TypeScript config files, ensure `jiti` is at least v2.2.0.
+</Info>
+
+```bash
+npm install jiti@^2.2.0 --save-dev
+```
+
+### Minimatch v10
+
+ESLint v10 uses minimatch v10, which supports POSIX character classes:
+
+```bash
+# Match files starting with uppercase letters
+npx eslint "**/[[:upper:]]*.js"
+
+# Match files with digits
+npx eslint "**/[[:digit:]]*.js"
+```
+
+---
+
+## Common Migration Issues
+
+<AccordionGroup>
+  <Accordion title="Error: 'v10_config_lookup_from_file' flag not recognized">
+    **Solution:** Remove the flag from your configuration. It's now the default behavior.
+    
+    ```bash
+    # Remove this flag
+    --flag v10_config_lookup_from_file
+    ```
+  </Accordion>
+  
+  <Accordion title="Error: Configuration file not found">
+    **Solution:** Ensure you have `eslint.config.js` (not `.eslintrc`) in your project root.
+    
+    ```bash
+    # Create a basic config
+    npm init @eslint/config@latest
+    ```
+  </Accordion>
+  
+  <Accordion title="Error: /* eslint-env */ comments not supported">
+    **Solution:** Remove `eslint-env` comments and configure globals in `eslint.config.js`:
+    
+    ```javascript
+    import globals from "globals";
+    
+    export default [{
+      languageOptions: {
+        globals: globals.browser
+      }
+    }];
+    ```
+  </Accordion>
+  
+  <Accordion title="JSX components flagged as unused">
+    **Solution:** This shouldn't happen in v10 (JSX tracking is fixed). If you see this, ensure you've removed workaround plugins like `@eslint-react/jsx-uses-vars`.
+  </Accordion>
+  
+  <Accordion title="TypeError: context.getFilename is not a function">
+    **Solution:** Update your rule to use `context.filename` instead of `context.getFilename()`:
+    
+    ```javascript
+    // Before
+    const filename = context.getFilename();
+    
+    // After
+    const filename = context.filename;
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Testing Your Migration
+
+<Steps>
+  <Step title="Run ESLint">
+    ```bash
+    npx eslint .
+    ```
+  </Step>
+  
+  <Step title="Check for new errors">
+    Review any new errors from `eslint:recommended` rules.
+  </Step>
+  
+  <Step title="Test in CI/CD">
+    Ensure your CI/CD pipeline uses Node.js v20.19+ and ESLint v10.
+  </Step>
+  
+  <Step title="Update editor integrations">
+    Restart your editor to pick up the new ESLint version.
+  </Step>
+</Steps>
+
+---
+
+## Resources
+
+<CardGroup cols={2}>
+  <Card title="Official Migration Guide" icon="book" href="https://eslint.org/docs/latest/use/migrate-to-10.0.0">
+    Complete official migration documentation
+  </Card>
+  
+  <Card title="Configuration Guide" icon="gear" href="https://eslint.org/docs/latest/use/configure">
+    Learn about flat config format
+  </Card>
+  
+  <Card title="Breaking Changes" icon="triangle-exclamation" href="https://github.com/eslint/eslint/issues/19967">
+    Full list of breaking changes
+  </Card>
+  
+  <Card title="CHANGELOG" icon="clock-rotate-left" href="https://github.com/eslint/eslint/blob/main/CHANGELOG.md">
+    Complete version history
+  </Card>
+</CardGroup>
+
+---
+
+## Getting Help
+
+<Tip>
+If you encounter issues during migration:
+
+- Open a [discussion](https://github.com/eslint/eslint/discussions)
+- Join the [Discord server](https://eslint.org/chat)
+- Search [existing issues](https://github.com/eslint/eslint/issues)
+</Tip>

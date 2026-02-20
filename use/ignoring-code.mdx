@@ -1,0 +1,712 @@
+---
+title: Ignoring Code
+description: Learn how to configure ESLint to ignore specific files, directories, and patterns during linting
+---
+
+# Ignoring Code
+
+You can configure ESLint to ignore certain files and directories while linting. This is useful for excluding build outputs, dependencies, and other files that shouldn't be linted.
+
+## Quick Start
+
+<CodeGroup>
+```javascript Global Ignores
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([".config/*", "dist/", "build/"])
+]);
+```
+
+```javascript Local Ignores
+export default [
+  {
+    files: ["src/**/*.js"],
+    ignores: ["**/*.config.js"],
+    rules: { /* ... */ }
+  }
+];
+```
+
+```bash Command Line
+npx eslint . --ignore-pattern ".config/*"
+```
+</CodeGroup>
+
+## Default Ignore Patterns
+
+ESLint automatically ignores these patterns:
+
+<CardGroup cols={2}>
+  <Card title="**/node_modules/" icon="node">
+    All node_modules directories
+  </Card>
+  <Card title=".git/" icon="git-alt">
+    Git directory
+  </Card>
+</CardGroup>
+
+<Info>
+Files and directories starting with a dot (like `.foo.js` or `.fixtures`) are NOT ignored by default (except `.git`).
+</Info>
+
+## Global Ignores
+
+Global ignores apply to every configuration object in your config file:
+
+```javascript eslint.config.js
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  // These ignores apply to ALL configurations below
+  globalIgnores([".config/", "dist/", "tsconfig.json"]),
+  
+  {
+    rules: {
+      semi: "error"
+    }
+  },
+  {
+    files: ["**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn"
+    }
+  }
+]);
+```
+
+<Tip>
+Use `globalIgnores()` helper function to clearly indicate which ignores are global.
+</Tip>
+
+### Named Global Ignores
+
+You can provide a name for debugging:
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores(["build/**/*"], "Ignore Build Directory")
+]);
+```
+
+## Ignore Files
+
+### Ignore Specific Files
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([
+    ".config/*",        // All files in .config directory
+    "webpack.config.js", // Specific file
+    "*.config.js"       // All files ending with .config.js
+  ])
+]);
+```
+
+### Ignore Multiple File Types
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([
+    "**/*.min.js",    // Minified files
+    "**/*.bundle.js",  // Bundle files
+    "**/*.test.js",    // Test files
+    "**/*.spec.js"     // Spec files
+  ])
+]);
+```
+
+### Ignore Default Patterns
+
+By default, ESLint lints `**/*.js`, `**/*.cjs`, and `**/*.mjs`. To ignore these:
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  // Ignore default patterns
+  globalIgnores(["**/*.js", "**/*.cjs", "**/*.mjs"]),
+  
+  // Only lint TypeScript files
+  {
+    files: ["**/*.ts"],
+    rules: { /* ... */ }
+  }
+]);
+```
+
+## Ignore Directories
+
+### Single Directory
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([".config/"])  // Note the trailing slash
+]);
+```
+
+<Warning>
+Without a trailing `/`, the pattern only ignores a file named `.config` in the same directory as the config file.
+</Warning>
+
+### Recursive Directory Ignore
+
+Ignore all directories with a specific name:
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([
+    "**/.config/",    // All .config directories recursively
+    "**/dist/",       // All dist directories
+    "**/build/",      // All build directories
+    "**/node_modules/" // Redundant (already default)
+  ])
+]);
+```
+
+### Common Directory Patterns
+
+<AccordionGroup>
+<Accordion title="Build Outputs" icon="hammer">
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([
+    "dist/",
+    "build/",
+    "out/",
+    ".next/",
+    ".nuxt/",
+    "public/build/"
+  ])
+]);
+```
+
+</Accordion>
+
+<Accordion title="Dependencies" icon="box">
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([
+    "node_modules/",  // Already default
+    "bower_components/",
+    "vendor/",
+    "jspm_packages/"
+  ])
+]);
+```
+
+</Accordion>
+
+<Accordion title="Coverage and Tests" icon="flask">
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([
+    "coverage/",
+    ".nyc_output/",
+    "test-results/",
+    "*.test.js",
+    "*.spec.js"
+  ])
+]);
+```
+
+</Accordion>
+
+<Accordion title="Generated Files" icon="wand-magic-sparkles">
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([
+    "**/*.generated.js",
+    "**/*.g.js",
+    "**/generated/**",
+    "**/__generated__/**"
+  ])
+]);
+```
+
+</Accordion>
+</AccordionGroup>
+
+## Unignore Files and Directories
+
+Use negation patterns (starting with `!`) to unignore previously ignored files:
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([
+    "!node_modules/",      // Unignore node_modules
+    "node_modules/*",      // Ignore its content
+    "!node_modules/mylibrary/", // Unignore specific library
+  ])
+]);
+```
+
+<Info>
+Negation patterns must come after the patterns they're negating.
+</Info>
+
+### Unignore Specific Files in Ignored Directory
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([
+    "build/**/*",        // Ignore all contents (not the directory itself)
+    "!build/test.js"     // Unignore specific file
+  ])
+]);
+```
+
+<Warning>
+Use `build/**/*` instead of `build/**`. The pattern `build/**` ignores the entire directory and traversal will skip it completely.
+</Warning>
+
+### Unignore Files at Any Level
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([
+    "build/**/*",         // Ignore all contents
+    "!build/**/*/",       // Unignore subdirectories
+    "!build/**/test.js"   // Unignore test.js at any level
+  ])
+]);
+```
+
+### Unignore While Ignoring Defaults
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([
+    "**/*.js",           // Ignore all .js files
+    "**/*.cjs",          // Ignore all .cjs files
+    "**/*.mjs",          // Ignore all .mjs files
+    "!**/src/**/*.js"    // Except .js files in src directories
+  ])
+]);
+```
+
+## Non-Global Ignores
+
+Non-global ignores only apply to their configuration object:
+
+```javascript
+export default [
+  {
+    files: ["src/**/*.js"],
+    ignores: [".config/**", "dir1/script1.js"],
+    rules: {
+      semi: "error"
+    }
+  },
+  {
+    files: ["tests/**/*.js"],
+    ignores: ["fixtures/**"],
+    rules: {
+      "no-unused-expressions": "off"
+    }
+  }
+];
+```
+
+<Info>
+Non-global `ignores` can only match file names, not directory names like global ignores can.
+</Info>
+
+### Global vs Non-Global
+
+<Tabs>
+  <Tab title="Global">
+    ```javascript
+    // No other keys = global ignores
+    export default [
+      {
+        ignores: [".config/", "dist/"]
+      },
+      // Applies to all configurations below
+      {
+        rules: { semi: "error" }
+      }
+    ];
+    ```
+    
+    **Characteristics:**
+    - Applies to every configuration object
+    - Can match directories: `"dir/"`
+    - Patterns: files, directories, and wildcards
+  </Tab>
+  <Tab title="Non-Global">
+    ```javascript
+    // Has other keys = non-global ignores
+    export default [
+      {
+        ignores: [".config/**"],
+        rules: { semi: "error" }
+      },
+      // Does NOT apply here
+      {
+        rules: { "no-console": "off" }
+      }
+    ];
+    ```
+    
+    **Characteristics:**
+    - Only applies to its configuration object
+    - Can only match file names
+    - Patterns: files and wildcards only
+  </Tab>
+</Tabs>
+
+## Command Line Ignores
+
+Ignore patterns from the command line:
+
+```bash
+# Ignore a specific pattern
+npx eslint . --ignore-pattern ".config/*"
+
+# Ignore multiple patterns
+npx eslint . --ignore-pattern "/lib/" --ignore-pattern "/src/vendor/*"
+
+# Unignore a pattern
+npx eslint . --ignore-pattern "!node_modules/"
+```
+
+<Note>
+Command line patterns are evaluated relative to the current working directory.
+</Note>
+
+## Include .gitignore Files
+
+You can include patterns from `.gitignore` files:
+
+```javascript eslint.config.js
+import { defineConfig } from "eslint/config";
+import { includeIgnoreFile } from "@eslint/compat";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+const gitignorePath = fileURLToPath(new URL(".gitignore", import.meta.url));
+
+export default defineConfig([
+  includeIgnoreFile(gitignorePath),
+  {
+    rules: { /* ... */ }
+  }
+]);
+```
+
+<Steps>
+  <Step title="Install @eslint/compat">
+    ```bash
+    npm install --save-dev @eslint/compat
+    ```
+  </Step>
+  
+  <Step title="Import includeIgnoreFile">
+    ```javascript
+    import { includeIgnoreFile } from "@eslint/compat";
+    ```
+  </Step>
+  
+  <Step title="Load .gitignore patterns">
+    ```javascript
+    const gitignorePath = path.resolve(__dirname, ".gitignore");
+    export default [
+      includeIgnoreFile(gitignorePath)
+    ];
+    ```
+  </Step>
+</Steps>
+
+### Named .gitignore Import
+
+```javascript
+import { includeIgnoreFile } from "@eslint/compat";
+import { fileURLToPath } from "node:url";
+
+const gitignorePath = fileURLToPath(new URL(".gitignore", import.meta.url));
+
+export default [
+  includeIgnoreFile(gitignorePath, "Imported .gitignore patterns"),
+  { /* ... */ }
+];
+```
+
+## Pattern Syntax
+
+Ignore patterns use [minimatch](https://www.npmjs.com/package/minimatch) syntax:
+
+<AccordionGroup>
+<Accordion title="Wildcards" icon="asterisk">
+
+| Pattern | Matches |
+|---------|--------|
+| `*` | Any characters except `/` |
+| `**` | Any characters including `/` |
+| `?` | Single character |
+| `[abc]` | Character set |
+| `{a,b}` | Alternatives |
+
+**Examples:**
+```javascript
+"*.js"        // file.js, test.js
+"**/*.js"     // src/file.js, lib/test.js
+"test?.js"    // test1.js, testa.js
+"test[123].js" // test1.js, test2.js, test3.js
+"*.{js,ts}"   // file.js, file.ts
+```
+
+</Accordion>
+
+<Accordion title="Negation" icon="exclamation">
+
+Prefix with `!` to negate:
+
+```javascript
+[
+  "*.js",      // Ignore all .js files
+  "!test.js"   // Except test.js
+]
+```
+
+</Accordion>
+
+<Accordion title="Directory Matching" icon="folder">
+
+Trailing `/` matches directories:
+
+```javascript
+"build/"      // Matches build directory
+"**/dist/"    // Matches all dist directories
+"node_modules/" // Matches node_modules directory
+```
+
+</Accordion>
+
+<Accordion title="Relative Paths" icon="location-dot">
+
+Patterns are evaluated relative to:
+- `eslint.config.js` location for config file patterns
+- Current working directory for CLI patterns
+
+```javascript
+"./src/*.js"  // Relative to config file
+"src/*.js"    // Also relative to config file
+```
+
+</Accordion>
+</AccordionGroup>
+
+## Pattern Resolution
+
+How patterns are evaluated depends on where they're used:
+
+<Tabs>
+  <Tab title="Config File">
+    ```javascript
+    // Evaluated relative to eslint.config.js location
+    import { defineConfig, globalIgnores } from "eslint/config";
+    
+    export default defineConfig([
+      globalIgnores(["dist/", "build/"])
+    ]);
+    ```
+  </Tab>
+  <Tab title="Alternate Config">
+    ```bash
+    # Patterns evaluated relative to current directory
+    npx eslint --config other-config.js src/
+    ```
+  </Tab>
+  <Tab title="Command Line">
+    ```bash
+    # Patterns evaluated relative to current directory
+    npx eslint . --ignore-pattern "build/"
+    ```
+  </Tab>
+</Tabs>
+
+## Ignored File Warnings
+
+When you pass a specific file to ESLint that is ignored, you'll see a warning:
+
+```bash
+npx eslint foo.js
+```
+
+```
+foo.js
+  0:0  warning  File ignored because of a matching ignore pattern.
+               Use "--no-ignore" to disable file ignore settings or
+               use "--no-warn-ignored" to suppress this warning.
+
+✖ 1 problem (0 errors, 1 warning)
+```
+
+<Tip>
+- Use `--no-ignore` to lint the file anyway
+- Use `--no-warn-ignored` to suppress the warning
+</Tip>
+
+## Common Patterns
+
+<Tabs>
+  <Tab title="Node.js Project">
+    ```javascript
+    import { defineConfig, globalIgnores } from "eslint/config";
+    
+    export default defineConfig([
+      globalIgnores([
+        "node_modules/",
+        "dist/",
+        "build/",
+        "coverage/",
+        "*.min.js",
+        "*.bundle.js"
+      ])
+    ]);
+    ```
+  </Tab>
+  <Tab title="React Project">
+    ```javascript
+    import { defineConfig, globalIgnores } from "eslint/config";
+    
+    export default defineConfig([
+      globalIgnores([
+        "node_modules/",
+        "build/",
+        "dist/",
+        "public/",
+        "coverage/",
+        "*.config.js",
+        "*.config.ts"
+      ])
+    ]);
+    ```
+  </Tab>
+  <Tab title="TypeScript Project">
+    ```javascript
+    import { defineConfig, globalIgnores } from "eslint/config";
+    
+    export default defineConfig([
+      globalIgnores([
+        "node_modules/",
+        "dist/",
+        "build/",
+        "coverage/",
+        "*.js",          // Compiled output
+        "*.d.ts",        // Type definitions
+        "tsconfig.json"
+      ])
+    ]);
+    ```
+  </Tab>
+  <Tab title="Monorepo">
+    ```javascript
+    import { defineConfig, globalIgnores } from "eslint/config";
+    
+    export default defineConfig([
+      globalIgnores([
+        "node_modules/",
+        "**/dist/",
+        "**/build/",
+        "**/coverage/",
+        "**/node_modules/",
+        ".turbo/",
+        ".next/"
+      ])
+    ]);
+    ```
+  </Tab>
+</Tabs>
+
+## Complete Example
+
+```javascript eslint.config.js
+import { defineConfig, globalIgnores } from "eslint/config";
+import { includeIgnoreFile } from "@eslint/compat";
+import { fileURLToPath } from "node:url";
+
+const gitignorePath = fileURLToPath(new URL(".gitignore", import.meta.url));
+
+export default defineConfig([
+  // Include .gitignore patterns
+  includeIgnoreFile(gitignorePath, "Git Ignore Patterns"),
+  
+  // Global ignores
+  globalIgnores([
+    "dist/",
+    "build/",
+    "coverage/",
+    "*.min.js",
+    "*.bundle.js",
+    "**/__generated__/**"
+  ], "Build and Generated Files"),
+  
+  // Configuration for source files
+  {
+    name: "source-files",
+    files: ["src/**/*.js"],
+    ignores: ["**/*.test.js"],  // Non-global ignore
+    rules: {
+      "no-console": "error"
+    }
+  },
+  
+  // Configuration for test files
+  {
+    name: "test-files",
+    files: ["**/*.test.js", "**/*.spec.js"],
+    rules: {
+      "no-console": "off"
+    }
+  }
+]);
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="./configuration">
+    Learn about configuration files and objects
+  </Card>
+  <Card title="Command Line" icon="terminal" href="./command-line">
+    CLI options including --ignore-pattern
+  </Card>
+  <Card title="Core Concepts" icon="book" href="./core-concepts">
+    Understanding ESLint fundamentals
+  </Card>
+  <Card title="Rule Configuration" icon="ruler" href="./rule-configuration">
+    Configure rules for matched files
+  </Card>
+</CardGroup>

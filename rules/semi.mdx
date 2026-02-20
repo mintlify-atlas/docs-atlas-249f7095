@@ -1,0 +1,320 @@
+---
+title: semi
+description: Require or disallow semicolons instead of ASI
+---
+
+# semi
+
+JavaScript doesn't require semicolons at the end of statements. Automatic Semicolon Insertion (ASI) adds them. This rule enforces consistent semicolon usage.
+
+<Note>
+**Rule Type:** Layout  
+**Fixable:** Yes (automatically fixable)  
+**Deprecated:** Consider using Prettier
+</Note>
+
+## Why This Rule Exists
+
+There are two schools of thought:
+
+1. **Always use semicolons** - More explicit, no ASI surprises
+2. **Never use semicolons** - Cleaner, ASI handles it
+
+Both are valid. This rule enforces consistency.
+
+## ASI Gotchas
+
+<Warning>
+ASI can cause unexpected behavior if you're not careful.
+</Warning>
+
+```js
+return
+{
+    name: "ESLint"
+};
+// Becomes:
+return;
+{
+    name: "ESLint";
+}
+// Returns undefined!
+```
+
+```js
+var globalCounter = { }
+
+(function () {
+    var n = 0
+})();
+// Becomes:
+var globalCounter = { }(function () {...})();
+// Runtime error!
+```
+
+## Rule Details
+
+This rule enforces consistent semicolon usage.
+
+## Options
+
+### `"always"` (default)
+
+Require semicolons at the end of statements.
+
+**Incorrect:**
+
+```js
+var name = "ESLint"
+
+object.method = function() {
+    // ...
+}
+
+class Foo {
+    bar = 1
+}
+```
+
+**Correct:**
+
+```js
+var name = "ESLint";
+
+object.method = function() {
+    // ...
+};
+
+class Foo {
+    bar = 1;
+}
+```
+
+#### `omitLastInOneLineBlock`
+
+Omit the last semicolon in single-line blocks:
+
+```js
+// With { "omitLastInOneLineBlock": true }
+if (foo) { bar() }  // OK
+
+if (foo) { bar(); baz() }  // OK
+
+function f() { bar(); baz() }  // OK
+```
+
+#### `omitLastInOneLineClassBody`
+
+Omit the last semicolon in single-line class bodies:
+
+```js
+// With { "omitLastInOneLineClassBody": true }
+export class Variant1 extends SomeClass{type=1}  // OK
+export class Variant2 extends SomeClass{type=2; anotherType=3}  // OK
+```
+
+### `"never"`
+
+Disallow semicolons (except to disambiguate).
+
+**Incorrect:**
+
+```js
+var name = "ESLint";
+
+object.method = function() {
+    // ...
+};
+
+class Foo {
+    bar = 1;
+}
+```
+
+**Correct:**
+
+```js
+var name = "ESLint"
+
+object.method = function() {
+    // ...
+}
+
+var name = "ESLint"
+
+;(function() {
+    // ...
+})()
+
+import a from "a"
+(function() {
+    // ...
+})()
+
+class Foo {
+    bar = 1
+}
+```
+
+#### `beforeStatementContinuationChars`
+
+Control semicolons before continuation characters `[`, `(`, `/`, `+`, `-`:
+
+- `"any"` (default) - Ignore
+- `"always"` - Require semicolons before these
+- `"never"` - Disallow semicolons before these
+
+```js
+// With "never", { "beforeStatementContinuationChars": "always" }
+import a from "a"
+
+// This would need a semicolon
+;(function() {
+    // ...
+})()
+```
+
+## Configuration Examples
+
+```js
+// Always use semicolons (default)
+{
+  "rules": {
+    "semi": "error"
+  }
+}
+
+// Explicit always
+{
+  "rules": {
+    "semi": ["error", "always"]
+  }
+}
+
+// Never use semicolons
+{
+  "rules": {
+    "semi": ["error", "never"]
+  }
+}
+
+// Always, but omit in one-line blocks
+{
+  "rules": {
+    "semi": ["error", "always", { 
+      "omitLastInOneLineBlock": true 
+    }]
+  }
+}
+
+// Never, but require before continuation chars
+{
+  "rules": {
+    "semi": ["error", "never", { 
+      "beforeStatementContinuationChars": "always" 
+    }]
+  }
+}
+```
+
+## Common Patterns
+
+### Return Statements
+
+<Warning>
+Be careful with return statements and ASI.
+</Warning>
+
+```js
+// Bad: Returns undefined
+return
+{
+    value: 42
+};
+
+// Good: Returns object
+return {
+    value: 42
+};
+```
+
+### IIFE
+
+```js
+// Without semicolon - needs leading semicolon
+var x = 1
+
+;(function() {
+    console.log(x)
+})()
+
+// With semicolon - no leading semicolon needed
+var x = 1;
+
+(function() {
+    console.log(x);
+})();
+```
+
+### Array Access
+
+```js
+// Dangerous without semicolons
+var arr = [1, 2, 3]
+[0].toString()
+// Tries to call arr[0].toString(), not [0].toString()
+
+// Safe with semicolons
+var arr = [1, 2, 3];
+[0].toString();
+```
+
+## When to Use Each Style
+
+### Always (Recommended for Beginners)
+
+**Pros:**
+- More explicit
+- Fewer ASI surprises
+- Easier to understand
+
+**Cons:**
+- More verbose
+- Extra characters
+
+### Never (For Experienced Developers)
+
+**Pros:**
+- Cleaner look
+- Less typing
+
+**Cons:**
+- Must understand ASI rules
+- Need to handle edge cases
+- Can be tricky for beginners
+
+<Tip>
+If unsure, use "always". It's safer and more explicit.
+</Tip>
+
+## When Not to Use It
+
+<Tip>
+Most modern projects use Prettier for formatting. If you use Prettier, disable this rule.
+</Tip>
+
+Disable if:
+- You use Prettier or another formatter
+- Your team hasn't agreed on semicolon usage
+- You don't want to enforce a particular style
+
+## Related Rules
+
+- [no-extra-semi](/rules/no-extra-semi)
+- [no-unexpected-multiline](/rules/no-unexpected-multiline)
+- [semi-spacing](/rules/semi-spacing)
+
+## Further Reading
+
+- [An Open Letter to JavaScript Leaders Regarding Semicolons](https://blog.izs.me/2010/12/an-open-letter-to-javascript-leaders-regarding/)
+- [JavaScript Semicolon Insertion](https://web.archive.org/web/20200420230322/http://inimino.org/~inimino/blog/javascript_semicolons)

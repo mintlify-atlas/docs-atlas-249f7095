@@ -1,0 +1,253 @@
+---
+title: no-constructor-return
+description: Disallow returning value from constructor
+---
+
+# no-constructor-return
+
+Returning a value in a class constructor may be a mistake resulting from unfamiliarity with JavaScript or a copy-paste error.
+
+<Note>
+**Rule Type:** Problem  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+In JavaScript, returning a value from a constructor is unusual and often indicates a mistake. While JavaScript does allow it, the behavior can be confusing:
+
+- Returning an object replaces the instance being constructed
+- Returning a primitive value is ignored
+- An empty `return` statement is valid for early exit
+
+Most developers don't intend to return values from constructors, so this rule catches potential bugs.
+
+## Rule Details
+
+This rule disallows return statements in class constructors that return a value. Empty `return` statements (for control flow) are allowed.
+
+## Examples
+
+### Incorrect Code
+
+```js
+// Returning a value in constructor
+class A {
+    constructor(a) {
+        this.a = a;
+        return a; // Error
+    }
+}
+
+// Conditional return with value
+class B {
+    constructor(f) {
+        if (!f) {
+            return 'falsy'; // Error
+        }
+    }
+}
+
+// Returning an object
+class C {
+    constructor(config) {
+        return { ...config }; // Error
+    }
+}
+```
+
+### Correct Code
+
+```js
+// No return statement
+class C {
+    constructor(c) {
+        this.c = c;
+    }
+}
+
+// Empty return for control flow
+class D {
+    constructor(f) {
+        if (!f) {
+            return; // OK: early exit
+        }
+        f();
+    }
+}
+
+// Empty return at end
+class E {
+    constructor() {
+        return; // OK: no value
+    }
+}
+
+// Initialize without returning
+class F {
+    constructor(value) {
+        this.value = value;
+        this.initialized = true;
+    }
+}
+```
+
+## Common Mistakes
+
+### Copy-Paste from Regular Functions
+
+```js
+// Wrong: Copied from regular function
+class User {
+    constructor(name) {
+        if (!name) {
+            return null; // Error: meant for a factory function
+        }
+        this.name = name;
+    }
+}
+
+// Right: Use a factory function instead
+class User {
+    constructor(name) {
+        this.name = name;
+    }
+    
+    static create(name) {
+        if (!name) {
+            return null; // OK in static method
+        }
+        return new User(name);
+    }
+}
+```
+
+### Returning 'this' Unnecessarily
+
+```js
+// Wrong: Unnecessary return
+class Builder {
+    constructor() {
+        this.value = 0;
+        return this; // Error: this is returned automatically
+    }
+}
+
+// Right: No explicit return needed
+class Builder {
+    constructor() {
+        this.value = 0;
+    }
+    
+    // Return this in methods for chaining
+    setValue(val) {
+        this.value = val;
+        return this; // OK in regular method
+    }
+}
+```
+
+### Validation in Constructor
+
+```js
+// Wrong: Trying to prevent construction
+class ValidationRequired {
+    constructor(data) {
+        if (!this.validate(data)) {
+            return null; // Error: doesn't work as intended
+        }
+        this.data = data;
+    }
+}
+
+// Right: Throw error for invalid data
+class ValidationRequired {
+    constructor(data) {
+        if (!this.validate(data)) {
+            throw new Error('Invalid data'); // OK
+        }
+        this.data = data;
+    }
+}
+```
+
+## Understanding Constructor Return Behavior
+
+<Warning>
+JavaScript's constructor return behavior is complex and often surprising.
+</Warning>
+
+```js
+class Example {
+    constructor() {
+        this.value = 'original';
+        
+        // Returning an object REPLACES the instance
+        return { value: 'replaced' };
+    }
+}
+
+const obj = new Example();
+console.log(obj.value); // 'replaced' (not 'original'!)
+console.log(obj instanceof Example); // false!
+```
+
+```js
+class Example2 {
+    constructor() {
+        this.value = 'original';
+        
+        // Returning a primitive is IGNORED
+        return 'ignored';
+    }
+}
+
+const obj2 = new Example2();
+console.log(obj2.value); // 'original'
+console.log(obj2 instanceof Example2); // true
+```
+
+## Alternatives
+
+### Factory Functions
+
+If you need conditional object creation, use a factory function:
+
+```js
+class User {
+    constructor(name) {
+        this.name = name;
+    }
+    
+    static create(name) {
+        if (!name) return null;
+        return new User(name);
+    }
+}
+
+const user = User.create(inputName);
+```
+
+### Throwing Errors
+
+For validation, throw errors in the constructor:
+
+```js
+class User {
+    constructor(name) {
+        if (!name) {
+            throw new TypeError('Name is required');
+        }
+        this.name = name;
+    }
+}
+```
+
+## When Not to Use It
+
+This rule should almost never be disabled. If you find yourself needing to return values from constructors, consider refactoring to use factory functions or static methods instead.
+
+## Related Rules
+
+- [no-constructor](/rules/no-constructor)
+- [constructor-super](/rules/constructor-super)

@@ -1,0 +1,690 @@
+---
+title: Configuration
+description: Learn how to configure ESLint using eslint.config.js with flat config format
+---
+
+# Configuration
+
+You can configure ESLint using a configuration file that specifies built-in rules, plugins, custom rules, shareable configurations, and more.
+
+## Configuration File
+
+The ESLint configuration file can be named any of the following:
+
+<CardGroup cols={3}>
+  <Card title="eslint.config.js" icon="js">CommonJS or ESM</Card>
+  <Card title="eslint.config.mjs" icon="js">ESM only</Card>
+  <Card title="eslint.config.cjs" icon="js">CommonJS only</Card>
+  <Card title="eslint.config.ts" icon="code">TypeScript</Card>
+  <Card title="eslint.config.mts" icon="code">TypeScript ESM</Card>
+  <Card title="eslint.config.cts" icon="code">TypeScript CJS</Card>
+</CardGroup>
+
+<Note>
+TypeScript configuration files require additional setup (see [TypeScript Configuration](#typescript-configuration) below).
+</Note>
+
+Place the configuration file in the root directory of your project and export an array of configuration objects:
+
+```javascript eslint.config.js
+import { defineConfig } from "eslint/config";
+
+export default defineConfig([
+  {
+    rules: {
+      semi: "error",
+      "prefer-const": "error",
+    },
+  },
+]);
+```
+
+<Tabs>
+  <Tab title="ESM">
+    ```javascript eslint.config.js
+    import { defineConfig } from "eslint/config";
+    
+    export default defineConfig([
+      {
+        rules: {
+          semi: "error",
+          "prefer-const": "error",
+        },
+      },
+    ]);
+    ```
+  </Tab>
+  <Tab title="CommonJS">
+    ```javascript eslint.config.js
+    const { defineConfig } = require("eslint/config");
+    
+    module.exports = defineConfig([
+      {
+        rules: {
+          semi: "error",
+          "prefer-const": "error",
+        },
+      },
+    ]);
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+If your project does not specify `"type":"module"` in `package.json`, then `eslint.config.js` must be in CommonJS format.
+</Warning>
+
+## Configuration Objects
+
+Each configuration object contains all the information ESLint needs to execute on a set of files. Configuration objects are made up of these properties:
+
+<AccordionGroup>
+<Accordion title="name" icon="tag">
+
+A name for the configuration object. Used in error messages and config inspector.
+
+```javascript
+{
+  name: "my-config/recommended",
+  rules: { /* ... */ }
+}
+```
+
+</Accordion>
+
+<Accordion title="files" icon="file">
+
+Array of glob patterns indicating which files the configuration applies to.
+
+```javascript
+{
+  files: ["**/*.js", "**/*.mjs"],
+  rules: { /* ... */ }
+}
+```
+
+</Accordion>
+
+<Accordion title="ignores" icon="ban">
+
+Array of glob patterns indicating files to exclude.
+
+```javascript
+{
+  files: ["src/**/*.js"],
+  ignores: ["**/*.config.js"],
+  rules: { /* ... */ }
+}
+```
+
+</Accordion>
+
+<Accordion title="languageOptions" icon="code">
+
+Settings for how JavaScript is configured for linting.
+
+```javascript
+{
+  languageOptions: {
+    ecmaVersion: 2024,
+    sourceType: "module",
+    globals: {
+      myCustomGlobal: "readonly"
+    },
+    parser: customParser,
+    parserOptions: { /* ... */ }
+  }
+}
+```
+
+**Properties:**
+- `ecmaVersion` - ECMAScript version (year or version number, or `"latest"`)
+- `sourceType` - `"script"`, `"module"`, or `"commonjs"`
+- `globals` - Additional global variables
+- `parser` - Custom parser object
+- `parserOptions` - Options for the parser
+
+</Accordion>
+
+<Accordion title="linterOptions" icon="sliders">
+
+Settings for the linting process.
+
+```javascript
+{
+  linterOptions: {
+    noInlineConfig: true,
+    reportUnusedDisableDirectives: "error",
+    reportUnusedInlineConfigs: "warn"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="processor" icon="gear">
+
+Processor for extracting JavaScript from other file types.
+
+```javascript
+{
+  processor: "pluginName/processorName"
+}
+```
+
+</Accordion>
+
+<Accordion title="plugins" icon="puzzle-piece">
+
+Plugins to load (name-value mapping).
+
+```javascript
+import examplePlugin from "eslint-plugin-example";
+
+export default [
+  {
+    plugins: {
+      example: examplePlugin
+    }
+  }
+];
+```
+
+</Accordion>
+
+<Accordion title="rules" icon="ruler">
+
+Configured rules.
+
+```javascript
+{
+  rules: {
+    semi: "error",
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "prefer-const": "warn"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="settings" icon="cog">
+
+Shared settings available to all rules.
+
+```javascript
+{
+  settings: {
+    sharedData: "Hello"
+  }
+}
+```
+
+</Accordion>
+</AccordionGroup>
+
+## Files and Patterns
+
+### Specify Files
+
+Use the `files` property to specify which files a configuration applies to:
+
+```javascript
+export default defineConfig([
+  {
+    // Matches all .js files
+    files: ["**/*.js"],
+    rules: {
+      semi: "error"
+    }
+  },
+  {
+    // Matches TypeScript files
+    files: ["**/*.ts", "**/*.tsx"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn"
+    }
+  }
+]);
+```
+
+<Info>
+Patterns use [minimatch](https://www.npmjs.com/package/minimatch) syntax and are evaluated relative to the `eslint.config.js` file location.
+</Info>
+
+### Files Without Extensions
+
+Match files without extensions using the `!(*.*)` pattern:
+
+```javascript
+{
+  files: ["**/!(*.*)"]
+}
+```
+
+### Multiple Pattern Matching (AND)
+
+Match files against multiple patterns:
+
+```javascript
+{
+  // Matches files that are BOTH in src/ AND end with .js
+  files: [["src/*", "**/*.js"]]
+}
+```
+
+### Exclude Files with Ignores
+
+Limit which files a configuration applies to:
+
+```javascript
+export default defineConfig([
+  {
+    files: ["src/**/*.js"],
+    ignores: ["**/*.config.js"],
+    rules: {
+      semi: "error"
+    }
+  }
+]);
+```
+
+<Tip>
+Use negation patterns to re-include files:
+```javascript
+{
+  files: ["src/**/*.js"],
+  ignores: ["**/*.config.js", "!**/eslint.config.js"],
+  rules: { semi: "error" }
+}
+```
+</Tip>
+
+## Global Ignores
+
+Ignore files across all configurations using `globalIgnores()`:
+
+```javascript
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores([".config/", "dist/", "tsconfig.json"]),
+  {
+    rules: { /* ... */ }
+  }
+]);
+```
+
+<Note>
+Default ignore patterns are `["**/node_modules/", ".git/"]`.
+</Note>
+
+### Global vs Non-Global Ignores
+
+<Tabs>
+  <Tab title="Global">
+    ```javascript
+    // Acts as global ignores (no other keys)
+    export default defineConfig([
+      globalIgnores([".config/", "dist/"]),
+      { rules: { /* ... */ } }
+    ]);
+    ```
+    
+    - Applies to every configuration object
+    - Can match directories: `"dir/"`
+  </Tab>
+  <Tab title="Non-Global">
+    ```javascript
+    // Acts as non-global (has other keys)
+    export default defineConfig([
+      {
+        ignores: [".config/**", "dir1/script1.js"],
+        rules: { /* ... */ }
+      }
+    ]);
+    ```
+    
+    - Only applies to this configuration object
+    - Can only match files or files within directories
+  </Tab>
+</Tabs>
+
+## Cascading Configuration
+
+When multiple configuration objects match a file, they are merged with later objects overriding previous ones:
+
+```javascript
+export default defineConfig([
+  {
+    files: ["**/*.js"],
+    languageOptions: {
+      globals: {
+        MY_CUSTOM_GLOBAL: "readonly"
+      }
+    }
+  },
+  {
+    files: ["tests/**/*.js"],
+    languageOptions: {
+      globals: {
+        it: "readonly",
+        describe: "readonly"
+      }
+    }
+  }
+]);
+```
+
+For test files, both configurations apply, merging the `globals` together.
+
+## Language Options
+
+Configure how ESLint parses JavaScript:
+
+```javascript
+export default defineConfig([
+  {
+    languageOptions: {
+      // ECMAScript version
+      ecmaVersion: 2024, // or "latest"
+      
+      // Source type
+      sourceType: "module", // "script", "module", or "commonjs"
+      
+      // Global variables
+      globals: {
+        myGlobal: "readonly",
+        anotherGlobal: "writable"
+      },
+      
+      // Custom parser
+      parser: await import("@typescript-eslint/parser"),
+      
+      // Parser options
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true
+        }
+      }
+    }
+  }
+]);
+```
+
+<Info>
+**Default values:**
+- `ecmaVersion`: `"latest"`
+- `sourceType`: `"module"` for `.js` and `.mjs`, `"commonjs"` for `.cjs`
+- `parser`: `espree` (built-in)
+</Info>
+
+## Extending Configurations
+
+Use `extends` to inherit from other configurations:
+
+```javascript
+import examplePlugin from "eslint-plugin-example";
+import { defineConfig } from "eslint/config";
+
+export default defineConfig([
+  {
+    files: ["**/*.js"],
+    plugins: {
+      example: examplePlugin
+    },
+    extends: ["example/recommended"],
+    rules: {
+      "no-unused-vars": "warn" // Override extended rules
+    }
+  }
+]);
+```
+
+### Predefined Configurations
+
+ESLint provides two predefined configurations:
+
+<Tabs>
+  <Tab title="js/recommended">
+    ```javascript
+    import js from "@eslint/js";
+    import { defineConfig } from "eslint/config";
+    
+    export default defineConfig([
+      {
+        files: ["**/*.js"],
+        plugins: { js },
+        extends: ["js/recommended"],
+        rules: {
+          "no-unused-vars": "warn"
+        }
+      }
+    ]);
+    ```
+    
+    Enables recommended rules to avoid potential errors.
+  </Tab>
+  <Tab title="js/all">
+    ```javascript
+    import js from "@eslint/js";
+    import { defineConfig } from "eslint/config";
+    
+    export default defineConfig([
+      {
+        files: ["**/*.js"],
+        plugins: { js },
+        extends: ["js/all"]
+      }
+    ]);
+    ```
+    
+    <Warning>
+    Enables ALL built-in rules. Not recommended for production - changes with every minor/major version.
+    </Warning>
+  </Tab>
+</Tabs>
+
+### Shareable Configurations
+
+Use npm packages that export configurations:
+
+```javascript
+import exampleConfig from "eslint-config-example";
+import { defineConfig } from "eslint/config";
+
+export default defineConfig([
+  {
+    files: ["**/*.js"],
+    extends: [exampleConfig],
+    rules: {
+      "no-unused-vars": "warn"
+    }
+  }
+]);
+```
+
+## Base Path
+
+Apply configuration to a specific subdirectory:
+
+```javascript
+export default defineConfig([
+  {
+    basePath: "tests",
+    rules: {
+      "no-undef": "error"
+    }
+  },
+  {
+    basePath: "tests",
+    files: ["**/*.spec.js"],
+    languageOptions: {
+      globals: {
+        it: "readonly",
+        describe: "readonly"
+      }
+    }
+  }
+]);
+```
+
+## TypeScript Configuration
+
+For TypeScript configuration files:
+
+<Steps>
+  <Step title="Install jiti">
+    For Node.js, install the optional `jiti` dependency:
+    
+    ```bash
+    npm install --save-dev jiti
+    ```
+    
+    <Note>
+    Deno and Bun support TypeScript natively and don't require jiti.
+    </Note>
+  </Step>
+  
+  <Step title="Create TypeScript config">
+    Create a config file with `.ts`, `.mts`, or `.cts` extension:
+    
+    ```typescript eslint.config.ts
+    import { defineConfig } from "eslint/config";
+    
+    export default defineConfig([
+      {
+        rules: {
+          semi: "error"
+        }
+      }
+    ]);
+    ```
+  </Step>
+  
+  <Step title="Native Node.js Support (Experimental)">
+    For Node.js >= 22.13.0, use the experimental native TypeScript support:
+    
+    ```bash
+    npx --node-options='--experimental-strip-types' eslint \
+      --flag unstable_native_nodejs_ts_config
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+ESLint does not perform type checking on your configuration file and does not apply settings from `tsconfig.json`.
+</Warning>
+
+## Configuration Naming
+
+Provide names for configuration objects to help with debugging:
+
+```javascript
+export default defineConfig([
+  {
+    name: "my-project/base",
+    rules: {
+      semi: "error"
+    }
+  },
+  {
+    name: "my-project/typescript",
+    files: ["**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn"
+    }
+  }
+]);
+```
+
+<Tip>
+Use `/` as a separator to scope names: `"plugin-name/config-name"`
+</Tip>
+
+## Complete Example
+
+```javascript eslint.config.js
+import { defineConfig, globalIgnores } from "eslint/config";
+import js from "@eslint/js";
+import typescriptPlugin from "@typescript-eslint/eslint-plugin";
+import typescriptParser from "@typescript-eslint/parser";
+
+export default defineConfig([
+  // Global ignores
+  globalIgnores(["dist/", "build/", "*.config.js"]),
+  
+  // Base configuration for all JS files
+  {
+    name: "base-js",
+    files: ["**/*.js", "**/*.mjs"],
+    plugins: { js },
+    extends: ["js/recommended"],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: "module",
+      globals: {
+        console: "readonly",
+        process: "readonly"
+      }
+    },
+    rules: {
+      "no-unused-vars": "warn",
+      "prefer-const": "error",
+      semi: ["error", "always"]
+    }
+  },
+  
+  // TypeScript configuration
+  {
+    name: "typescript",
+    files: ["**/*.ts", "**/*.tsx"],
+    plugins: {
+      "@typescript-eslint": typescriptPlugin
+    },
+    languageOptions: {
+      parser: typescriptParser,
+      parserOptions: {
+        project: "./tsconfig.json"
+      }
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/explicit-function-return-type": "off"
+    }
+  },
+  
+  // Test files configuration
+  {
+    name: "tests",
+    files: ["**/*.test.js", "**/*.spec.js"],
+    languageOptions: {
+      globals: {
+        describe: "readonly",
+        it: "readonly",
+        expect: "readonly"
+      }
+    },
+    rules: {
+      "no-unused-expressions": "off"
+    }
+  }
+]);
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Rule Configuration" icon="ruler" href="./rule-configuration">
+    Learn how to configure individual rules
+  </Card>
+  <Card title="Ignoring Code" icon="ban" href="./ignoring-code">
+    Configure files and patterns to ignore
+  </Card>
+  <Card title="Core Concepts" icon="book" href="./core-concepts">
+    Understanding parsers, plugins, and more
+  </Card>
+  <Card title="Command Line" icon="terminal" href="./command-line">
+    CLI options and flags
+  </Card>
+</CardGroup>

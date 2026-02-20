@@ -1,0 +1,693 @@
+---
+title: Custom Rules
+description: Learn how to create custom ESLint rules with real examples from the ESLint codebase
+---
+
+# Custom Rules
+
+Custom rules allow you to enforce code standards specific to your project. This guide shows you how to create, test, and distribute custom rules.
+
+## Rule Structure
+
+Every rule is a JavaScript module that exports an object with two main properties:
+
+```javascript
+module.exports = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description: "Disallow unused variables",
+      recommended: true,
+      url: "https://example.com/rules/my-rule"
+    },
+    fixable: "code",
+    schema: [],
+    messages: {
+      unused: "'{{name}}' is defined but never used."
+    }
+  },
+  create(context) {
+    return {
+      // visitor methods
+    };
+  }
+};
+```
+
+## The Meta Object
+
+The `meta` object contains metadata about your rule:
+
+<ParamField path="type" type="string" required>
+  Rule type: `"problem"`, `"suggestion"`, or `"layout"`
+  
+  - `"problem"`: Code that will cause errors or confusing behavior
+  - `"suggestion"`: Code that could be improved but won't cause errors
+  - `"layout"`: Whitespace, semicolons, and code formatting
+</ParamField>
+
+<ParamField path="docs" type="object">
+  Documentation metadata
+  
+  <ParamField path="docs.description" type="string" required>
+    Short description of what the rule does
+  </ParamField>
+  
+  <ParamField path="docs.recommended" type="boolean">
+    Whether the rule is recommended
+  </ParamField>
+  
+  <ParamField path="docs.url" type="string">
+    URL to full documentation
+  </ParamField>
+</ParamField>
+
+<ParamField path="fixable" type="string">
+  Either `"code"` or `"whitespace"` if the rule supports automatic fixes
+  
+  <Warning>
+  The `fixable` property is **mandatory** for fixable rules. Omit it if your rule doesn't provide fixes.
+  </Warning>
+</ParamField>
+
+<ParamField path="hasSuggestions" type="boolean">
+  Set to `true` if the rule provides suggestions
+  
+  <Warning>
+  The `hasSuggestions` property is **mandatory** for rules that provide suggestions.
+  </Warning>
+</ParamField>
+
+<ParamField path="schema" type="array | object | false">
+  JSON Schema defining the rule's options. Mandatory when the rule has options.
+</ParamField>
+
+<ParamField path="messages" type="object">
+  Object mapping message IDs to message templates
+  
+  ```javascript
+  messages: {
+    avoidName: "Avoid using variables named '{{name}}'",
+    unexpected: "Unexpected identifier"
+  }
+  ```
+</ParamField>
+
+## The Create Function
+
+The `create()` function returns an object with visitor methods that ESLint calls while traversing the AST:
+
+```javascript
+create(context) {
+  return {
+    // Visit Identifier nodes going down the tree
+    Identifier(node) {
+      // check the node
+    },
+    
+    // Visit FunctionExpression nodes going up the tree
+    "FunctionExpression:exit"(node) {
+      // check after visiting children
+    },
+    
+    // Code path analysis
+    onCodePathStart(codePath, node) {
+      // track code paths
+    }
+  };
+}
+```
+
+<Tip>
+Visit [ESLint Code Explorer](http://explorer.eslint.org) to see the AST structure for any JavaScript code.
+</Tip>
+
+## Real Example: no-console
+
+Here's a simplified version of ESLint's `no-console` rule:
+
+```javascript
+module.exports = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description: "Disallow the use of console",
+      recommended: false,
+      url: "https://eslint.org/docs/rules/no-console"
+    },
+    schema: [
+      {
+        type: "object",
+        properties: {
+          allow: {
+            type: "array",
+            items: { type: "string" },
+            minItems: 1,
+            uniqueItems: true
+          }
+        },
+        additionalProperties: false
+      }
+    ],
+    messages: {
+      unexpected: "Unexpected console statement."
+    }
+  },
+
+  create(context) {
+    const config = context.options[0] || {};
+    const allowed = config.allow || [];
+
+    return {
+      MemberExpression(node) {
+        if (node.object.name === "console") {
+          const methodName = node.property.name;
+          
+          if (!allowed.includes(methodName)) {
+            context.report({
+              node,
+              messageId: "unexpected"
+            });
+          }
+        }
+      }
+    };
+  }
+};
+```
+
+## The Context Object
+
+The `context` parameter provides essential information and methods:
+
+<ParamField path="context.id" type="string">
+  The rule ID
+</ParamField>
+
+<ParamField path="context.filename" type="string">
+  The filename being linted
+</ParamField>
+
+<ParamField path="context.sourceCode" type="SourceCode">
+  Object to interact with the source code
+</ParamField>
+
+<ParamField path="context.options" type="array">
+  Configured options for the rule (excludes severity)
+</ParamField>
+
+<ParamField path="context.settings" type="object">
+  Shared settings from configuration
+</ParamField>
+
+<ParamField path="context.languageOptions" type="object">
+  Language configuration (sourceType, ecmaVersion, parser, etc.)
+</ParamField>
+
+<ParamField path="context.report()" type="function">
+  Reports a problem in the code
+</ParamField>
+
+## Reporting Problems
+
+Use `context.report()` to report violations:
+
+```javascript
+context.report({
+  node,                    // The AST node
+  messageId: "avoidName", // Message ID from meta.messages
+  data: {                  // Data for message template
+    name: node.name
+  },
+  fix(fixer) {            // Optional autofix
+    return fixer.insertTextAfter(node, ";");
+  }
+});
+```
+
+### Using Message IDs
+
+Message IDs are the recommended way to define messages:
+
+<CodeGroup>
+```javascript Rule Definition
+module.exports = {
+  meta: {
+    messages: {
+      avoidFoo: "Avoid using variables named '{{name}}'"
+    }
+  },
+  create(context) {
+    return {
+      Identifier(node) {
+        if (node.name === "foo") {
+          context.report({
+            node,
+            messageId: "avoidFoo",
+            data: { name: "foo" }
+          });
+        }
+      }
+    };
+  }
+};
+```
+
+```javascript Test
+ruleTester.run("avoid-foo", rule, {
+  valid: ["const bar = 1;"],
+  invalid: [{
+    code: "const foo = 1;",
+    errors: [{ messageId: "avoidFoo" }]
+  }]
+});
+```
+</CodeGroup>
+
+## Applying Fixes
+
+Provide automatic fixes using the `fix` function:
+
+```javascript
+context.report({
+  node,
+  messageId: "missingSemi",
+  fix(fixer) {
+    return fixer.insertTextAfter(node, ";");
+  }
+});
+```
+
+### Fixer Methods
+
+<ParamField path="fixer.insertTextAfter(nodeOrToken, text)" type="function">
+  Insert text after a node or token
+</ParamField>
+
+<ParamField path="fixer.insertTextBefore(nodeOrToken, text)" type="function">
+  Insert text before a node or token
+</ParamField>
+
+<ParamField path="fixer.remove(nodeOrToken)" type="function">
+  Remove a node or token
+</ParamField>
+
+<ParamField path="fixer.replaceText(nodeOrToken, text)" type="function">
+  Replace the text of a node or token
+</ParamField>
+
+<ParamField path="fixer.insertTextAfterRange(range, text)" type="function">
+  Insert text after a range
+</ParamField>
+
+<ParamField path="fixer.insertTextBeforeRange(range, text)" type="function">
+  Insert text before a range
+</ParamField>
+
+<ParamField path="fixer.removeRange(range)" type="function">
+  Remove text in a range
+</ParamField>
+
+<ParamField path="fixer.replaceTextRange(range, text)" type="function">
+  Replace text in a range
+</ParamField>
+
+### Fix Best Practices
+
+<Warning>
+Follow these guidelines when creating fixes:
+
+1. **Don't change runtime behavior** - Fixes should only improve code style
+2. **Make fixes small** - Large fixes can conflict with other rules
+3. **One fix per message** - Return a single fix or array of fixes
+4. **Don't check for style conflicts** - ESLint will re-run rules after fixes
+</Warning>
+
+## Providing Suggestions
+
+Suggestions are alternatives to automatic fixes that require user approval:
+
+```javascript
+module.exports = {
+  meta: {
+    hasSuggestions: true,
+    messages: {
+      unnecessaryEscape: "Unnecessary escape character: \\{{char}}.",
+      removeEscape: "Remove the `\\`.",
+      escapeBackslash: "Replace `\\` with `\\\\`."
+    }
+  },
+  create(context) {
+    return {
+      Literal(node) {
+        // ... detect unnecessary escape
+        context.report({
+          node,
+          messageId: "unnecessaryEscape",
+          data: { char },
+          suggest: [
+            {
+              messageId: "removeEscape",
+              fix(fixer) {
+                return fixer.removeRange(range);
+              }
+            },
+            {
+              messageId: "escapeBackslash",
+              fix(fixer) {
+                return fixer.insertTextBeforeRange(range, "\\");
+              }
+            }
+          ]
+        });
+      }
+    };
+  }
+};
+```
+
+## Accessing Source Code
+
+The `SourceCode` object provides methods to work with the code:
+
+```javascript
+const sourceCode = context.sourceCode;
+
+// Get the source text
+const text = sourceCode.getText(node);
+
+// Get tokens
+const firstToken = sourceCode.getFirstToken(node);
+const lastToken = sourceCode.getLastToken(node);
+
+// Get comments
+const comments = sourceCode.getCommentsBefore(node);
+
+// Check for whitespace
+if (sourceCode.isSpaceBetween(token1, token2)) {
+  // ...
+}
+```
+
+### Common SourceCode Methods
+
+<AccordionGroup>
+  <Accordion title="getText(node)">
+    Returns the source code for a node
+    
+    ```javascript
+    const code = sourceCode.getText(node);
+    // With padding:
+    const codeWithContext = sourceCode.getText(node, 2, 2);
+    ```
+  </Accordion>
+  
+  <Accordion title="getFirstToken(node)">
+    Returns the first token of a node
+    
+    ```javascript
+    const token = sourceCode.getFirstToken(node);
+    // Skip tokens:
+    const token = sourceCode.getFirstToken(node, { skip: 1 });
+    ```
+  </Accordion>
+  
+  <Accordion title="getTokensBefore(node, count)">
+    Returns tokens before a node
+    
+    ```javascript
+    const tokens = sourceCode.getTokensBefore(node, 2);
+    ```
+  </Accordion>
+  
+  <Accordion title="getCommentsBefore(node)">
+    Returns comments before a node
+    
+    ```javascript
+    const comments = sourceCode.getCommentsBefore(node);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Working with Options
+
+Define a schema to validate rule options:
+
+```javascript
+module.exports = {
+  meta: {
+    schema: [
+      {
+        enum: ["always", "never"]
+      },
+      {
+        type: "object",
+        properties: {
+          exceptRange: { type: "boolean" }
+        },
+        additionalProperties: false
+      }
+    ]
+  },
+  create(context) {
+    const mode = context.options[0] || "always";
+    const config = context.options[1] || {};
+    
+    // Use options...
+  }
+};
+```
+
+## Accessing Variable Scopes
+
+Track variables and their usage:
+
+```javascript
+create(context) {
+  return {
+    Identifier(node) {
+      const scope = context.sourceCode.getScope(node);
+      const variable = scope.variables.find(v => v.name === node.name);
+      
+      if (variable) {
+        // Check references
+        const references = variable.references;
+        const isRead = references.some(ref => ref.isRead());
+      }
+    }
+  };
+}
+```
+
+## Creating Your First Rule
+
+<Steps>
+  <Step title="Define the Rule">
+    Create a new file for your rule:
+    
+    ```javascript lib/rules/no-var.js
+    module.exports = {
+      meta: {
+        type: "suggestion",
+        docs: {
+          description: "Require let or const instead of var"
+        },
+        fixable: "code",
+        schema: [],
+        messages: {
+          unexpected: "Unexpected var, use let or const instead."
+        }
+      },
+      
+      create(context) {
+        return {
+          VariableDeclaration(node) {
+            if (node.kind === "var") {
+              context.report({
+                node,
+                messageId: "unexpected",
+                fix(fixer) {
+                  const sourceCode = context.sourceCode;
+                  const firstToken = sourceCode.getFirstToken(node);
+                  return fixer.replaceText(firstToken, "let");
+                }
+              });
+            }
+          }
+        };
+      }
+    };
+    ```
+  </Step>
+  
+  <Step title="Test Your Rule">
+    Create tests using RuleTester:
+    
+    ```javascript tests/rules/no-var.js
+    const { RuleTester } = require("eslint");
+    const rule = require("../../lib/rules/no-var");
+    
+    const ruleTester = new RuleTester({
+      languageOptions: { ecmaVersion: 2015 }
+    });
+    
+    ruleTester.run("no-var", rule, {
+      valid: [
+        "let x = 1;",
+        "const y = 2;"
+      ],
+      invalid: [
+        {
+          code: "var x = 1;",
+          output: "let x = 1;",
+          errors: [{ messageId: "unexpected" }]
+        }
+      ]
+    });
+    ```
+  </Step>
+  
+  <Step title="Use the Rule">
+    Add to your ESLint configuration:
+    
+    ```javascript eslint.config.js
+    import noVar from "./lib/rules/no-var.js";
+    
+    export default [
+      {
+        plugins: {
+          custom: { rules: { "no-var": noVar } }
+        },
+        rules: {
+          "custom/no-var": "error"
+        }
+      }
+    ];
+    ```
+  </Step>
+</Steps>
+
+## Testing Rules
+
+Use `RuleTester` to validate your rule:
+
+```javascript
+const { RuleTester } = require("eslint");
+const rule = require("../rules/my-rule");
+
+const ruleTester = new RuleTester({
+  languageOptions: {
+    ecmaVersion: 2022,
+    sourceType: "module"
+  }
+});
+
+ruleTester.run("my-rule", rule, {
+  valid: [
+    "const x = 1;",
+    { code: "let y = 2;", options: ["allow-let"] }
+  ],
+  invalid: [
+    {
+      code: "var x = 1;",
+      errors: [{ messageId: "noVar" }],
+      output: "let x = 1;"
+    }
+  ]
+});
+```
+
+## Runtime Rules
+
+Test rules locally without publishing:
+
+<Steps>
+  <Step title="Create a rules directory">
+    ```bash
+    mkdir eslint_rules
+    ```
+  </Step>
+  
+  <Step title="Add your rule file">
+    ```bash
+    cp my-rule.js eslint_rules/
+    ```
+  </Step>
+  
+  <Step title="Configure ESLint">
+    ```javascript eslint.config.js
+    export default [
+      {
+        rules: {
+          "my-rule": "error"
+        }
+      }
+    ];
+    ```
+  </Step>
+  
+  <Step title="Run with --rulesdir">
+    ```bash
+    eslint --rulesdir eslint_rules src/
+    ```
+  </Step>
+</Steps>
+
+## Performance Tips
+
+<Warning>
+Rules run on every file. Follow these practices:
+
+- **Target specific nodes**: Only visit necessary node types
+- **Avoid expensive operations**: No file I/O or network requests
+- **Cache results**: Store computed values
+- **Use early returns**: Exit visitor methods quickly when possible
+</Warning>
+
+### Profile Your Rule
+
+```bash
+TIMING=1 eslint --rule 'my-rule: error' lib
+```
+
+## Real-World Examples
+
+Learn from ESLint's built-in rules:
+
+<CardGroup cols={2}>
+  <Card title="no-unused-vars" href="https://github.com/eslint/eslint/blob/main/lib/rules/no-unused-vars.js">
+    Complex scope analysis and variable tracking
+  </Card>
+  
+  <Card title="semi" href="https://github.com/eslint/eslint/blob/main/lib/rules/semi.js">
+    Automatic fixing and option handling
+  </Card>
+  
+  <Card title="no-shadow" href="https://github.com/eslint/eslint/blob/main/lib/rules/no-shadow.js">
+    Scope traversal and variable shadowing
+  </Card>
+  
+  <Card title="array-callback-return" href="https://github.com/eslint/eslint/blob/main/lib/rules/array-callback-return.js">
+    Code path analysis
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create a Plugin" icon="plug" href="./plugins">
+    Package your rule for distribution
+  </Card>
+  
+  <Card title="Learn About Selectors" icon="crosshairs" href="./selectors">
+    Use advanced AST selectors
+  </Card>
+  
+  <Card title="Scope Manager" icon="layer-group" href="./scope-manager-interface">
+    Deep dive into scope analysis
+  </Card>
+  
+  <Card title="Code Path Analysis" icon="route" href="./code-path-analysis">
+    Analyze execution paths
+  </Card>
+</CardGroup>

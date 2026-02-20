@@ -1,0 +1,113 @@
+---
+title: Node.js API Overview
+description: Overview of the ESLint programmatic API
+---
+
+The ESLint Node.js API allows you to programmatically lint JavaScript code and integrate ESLint into your Node.js applications.
+
+## API Exports
+
+ESLint exports the following modules from `eslint`:
+
+```javascript
+const { ESLint, Linter, RuleTester, SourceCode } = require("eslint");
+```
+
+## Primary Classes
+
+### ESLint
+
+The `ESLint` class is the primary Node.js API for linting files and text. It provides methods for:
+
+- Linting files and directories
+- Linting text strings
+- Loading formatters
+- Calculating configurations
+- Getting rules metadata
+
+[Learn more about ESLint class →](/api/eslint)
+
+### Linter
+
+The `Linter` class is a low-level API for verifying code with explicit configuration. It provides:
+
+- Direct code verification with config objects
+- Autofix capabilities
+- Access to source code and suppressed messages
+
+[Learn more about Linter class →](/api/linter)
+
+### RuleTester
+
+The `RuleTester` class is used for testing ESLint rules. It provides:
+
+- Test framework integration (Mocha, Jest)
+- Valid and invalid test cases
+- Automatic assertion of rule behavior
+
+[Learn more about RuleTester →](/api/rule-tester)
+
+### SourceCode
+
+The `SourceCode` class represents parsed source code. It provides:
+
+- Access to AST, tokens, and comments
+- Scope analysis information
+- Methods for querying code structure
+
+[Learn more about SourceCode →](/api/source-code)
+
+## Configuration API
+
+ESLint also exports configuration helpers from `eslint/config`:
+
+```javascript
+const { defineConfig, globalIgnores } = require("eslint/config");
+```
+
+- [defineConfig](/api/config/define-config) - Type-safe config definition helper
+- [globalIgnores](/api/config/global-ignores) - Helper for global ignore patterns
+
+## Basic Usage
+
+<Tabs>
+  <Tab title="Linting Files">
+    ```javascript
+    const { ESLint } = require("eslint");
+
+    async function lintFiles() {
+      const eslint = new ESLint({
+        overrideConfigFile: "eslint.config.js"
+      });
+
+      const results = await eslint.lintFiles(["src/**/*.js"]);
+      const formatter = await eslint.loadFormatter("stylish");
+      console.log(formatter.format(results));
+    }
+
+    lintFiles();
+    ```
+  </Tab>
+  <Tab title="Linting Text">
+    ```javascript
+    const { Linter } = require("eslint");
+
+    const linter = new Linter();
+    const messages = linter.verify(
+      "var foo = 'bar';",
+      { rules: { "no-var": "error" } }
+    );
+
+    console.log(messages);
+    ```
+  </Tab>
+</Tabs>
+
+## Version Information
+
+You can access the ESLint version from both classes:
+
+```javascript
+console.log(ESLint.version);  // e.g., "9.0.0"
+console.log(Linter.version);  // e.g., "9.0.0"
+```

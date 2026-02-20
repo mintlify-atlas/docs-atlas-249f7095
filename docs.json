@@ -1,122 +1,147 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "ESLint",
+  "theme": "aspen",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#4B32C3",
+    "light": "#8B7FF4",
+    "dark": "#2D1B7A"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/eslint/eslint"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/eslint/eslint"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "installation"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Using ESLint",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "use/command-line",
+              "use/configuration",
+              "use/core-concepts",
+              "use/ignoring-code",
+              "use/rule-configuration",
+              "use/formatters",
+              "use/integrations"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Extending ESLint",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "extend/overview",
+              "extend/custom-rules",
+              "extend/custom-parsers",
+              "extend/custom-processors",
+              "extend/custom-formatters",
+              "extend/plugins",
+              "extend/shareable-configs"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Guides",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "guides/migrate-to-10",
+              "guides/configure-rules",
+              "guides/troubleshooting",
+              "guides/version-support"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Node.js API",
             "pages": [
-              "api-reference/introduction"
+              "api/overview",
+              "api/eslint",
+              "api/linter",
+              "api/rule-tester",
+              "api/source-code"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Configuration",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/config/define-config",
+              "api/config/global-ignores"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Rules",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "rules/index",
+              "rules/categories"
+            ]
+          },
+          {
+            "group": "Possible Problems",
+            "pages": [
+              "rules/array-callback-return",
+              "rules/no-await-in-loop",
+              "rules/no-constant-binary-expression",
+              "rules/no-constructor-return",
+              "rules/no-promise-executor-return",
+              "rules/no-self-compare",
+              "rules/no-unmodified-loop-condition",
+              "rules/no-unreachable-loop",
+              "rules/no-unused-private-class-members",
+              "rules/no-use-before-define"
+            ]
+          },
+          {
+            "group": "Best Practices",
+            "pages": [
+              "rules/block-scoped-var",
+              "rules/curly",
+              "rules/default-case",
+              "rules/eqeqeq",
+              "rules/no-alert",
+              "rules/no-caller",
+              "rules/no-eval",
+              "rules/no-implied-eval",
+              "rules/no-return-assign",
+              "rules/prefer-promise-reject-errors"
+            ]
+          },
+          {
+            "group": "Stylistic",
+            "pages": [
+              "rules/array-bracket-spacing",
+              "rules/brace-style",
+              "rules/camelcase",
+              "rules/comma-dangle",
+              "rules/indent",
+              "rules/quotes",
+              "rules/semi"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

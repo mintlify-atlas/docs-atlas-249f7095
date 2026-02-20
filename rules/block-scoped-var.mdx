@@ -1,0 +1,305 @@
+---
+title: block-scoped-var
+description: Enforce treating var declarations as block scoped
+---
+
+# block-scoped-var
+
+This rule generates warnings when `var` is used outside of the block in which it was defined, emulating C-style block scope.
+
+<Note>
+**Rule Type:** Suggestion  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+JavaScript's `var` is function-scoped, not block-scoped. This can cause confusion for developers coming from other languages or when expecting block-level scoping.
+
+```js
+function doIf() {
+    if (true) {
+        var build = true;
+    }
+    console.log(build); // Works! But confusing
+}
+```
+
+This rule helps catch bugs from variable hoisting by enforcing block-scope-like behavior for `var`.
+
+## Rule Details
+
+This rule aims to reduce usage of variables outside their binding context, helping developers avoid bugs from variable hoisting.
+
+## Examples
+
+### Incorrect Code
+
+```js
+// Declared in if block, used outside
+function doIf() {
+    if (true) {
+        var build = true;
+    }
+    console.log(build); // Error: used outside block
+}
+
+// Declared in one branch, used elsewhere
+function doIfElse() {
+    if (true) {
+        var build = true;
+    } else {
+        var build = false;
+    }
+}
+
+// Try/catch block scope
+function doTryCatch() {
+    try {
+        var build = 1;
+    } catch (e) {
+        var f = build; // Error: build from different block
+    }
+}
+
+// For loop scope
+function doFor() {
+    for (var x = 1; x < 10; x++) {
+        var y = f(x);
+    }
+    console.log(y); // Error: y used outside loop
+}
+
+// Static block scope
+class C {
+    static {
+        if (something) {
+            var build = true;
+        }
+        build = false; // Error: used outside if block
+    }
+}
+```
+
+### Correct Code
+
+```js
+// Declare at function level
+function doIf() {
+    var build;
+    if (true) {
+        build = true;
+    }
+    console.log(build); // OK: same scope
+}
+
+// Declare both in function scope
+function doIfElse() {
+    var build;
+    if (true) {
+        build = true;
+    } else {
+        build = false;
+    }
+}
+
+// Declare both at function level
+function doTryCatch() {
+    var build;
+    var f;
+    try {
+        build = 1;
+    } catch (e) {
+        f = build;
+    }
+}
+
+// Declare and use in same block
+function doFor() {
+    for (var x = 1; x < 10; x++) {
+        var y = f(x);
+        console.log(y); // OK: used in same block
+    }
+}
+
+// Declare at top of static block
+class C {
+    static {
+        var build = false;
+        if (something) {
+            build = true;
+        }
+    }
+}
+```
+
+## Understanding var Hoisting
+
+<Warning>
+`var` declarations are hoisted to the top of their function scope, but assignments remain in place.
+</Warning>
+
+```js
+function example() {
+    console.log(x); // undefined (not ReferenceError!)
+    if (true) {
+        var x = 5;
+    }
+    console.log(x); // 5
+}
+
+// How JavaScript actually sees it:
+function example() {
+    var x; // Hoisted to top
+    console.log(x); // undefined
+    if (true) {
+        x = 5; // Assignment stays
+    }
+    console.log(x); // 5
+}
+```
+
+## Modern Alternative: Use let/const
+
+<Tip>
+The best solution is to use `let` or `const` instead of `var`. They are truly block-scoped.
+</Tip>
+
+```js
+// Instead of this rule:
+function doIf() {
+    var build; // Declared at function level
+    if (true) {
+        build = true;
+    }
+    console.log(build);
+}
+
+// Just use let:
+function doIf() {
+    if (true) {
+        let build = true; // Block-scoped naturally
+        console.log(build);
+    }
+}
+```
+
+## Common Patterns
+
+### Loop Variables
+
+```js
+// Wrong: i used outside loop
+function findValue(arr, target) {
+    for (var i = 0; i < arr.length; i++) {
+        if (arr[i] === target) break;
+    }
+    return i < arr.length; // Error: i outside loop
+}
+
+// Right: Use let (naturally block-scoped)
+function findValue(arr, target) {
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i] === target) return true;
+    }
+    return false;
+}
+
+// Or declare at function level for var:
+function findValue(arr, target) {
+    var i;
+    for (i = 0; i < arr.length; i++) {
+        if (arr[i] === target) break;
+    }
+    return i < arr.length;
+}
+```
+
+### Conditional Declarations
+
+```js
+// Wrong: Multiple declarations in branches
+function process(condition) {
+    if (condition) {
+        var result = 'yes';
+    } else {
+        var result = 'no';
+    }
+    return result; // Error: result from different blocks
+}
+
+// Right: Single declaration
+function process(condition) {
+    var result;
+    if (condition) {
+        result = 'yes';
+    } else {
+        result = 'no';
+    }
+    return result;
+}
+
+// Better: Use const/let
+function process(condition) {
+    const result = condition ? 'yes' : 'no';
+    return result;
+}
+```
+
+## Migration Strategy
+
+If you have a legacy codebase:
+
+1. **Enable this rule** to find problematic `var` usage
+2. **Fix issues** by moving declarations to function level
+3. **Gradually migrate** to `let`/`const`
+4. **Use no-var rule** once migration is complete
+
+```js
+// Step 1: Current code (fails block-scoped-var)
+function example() {
+    if (condition) {
+        var x = 1;
+    }
+    return x;
+}
+
+// Step 2: Fix for block-scoped-var
+function example() {
+    var x;
+    if (condition) {
+        x = 1;
+    }
+    return x;
+}
+
+// Step 3: Migrate to let/const
+function example() {
+    let x;
+    if (condition) {
+        x = 1;
+    }
+    return x;
+}
+```
+
+## When Not to Use It
+
+Disable this rule if:
+
+1. You're already using `let`/`const` (use `no-var` instead)
+2. Your team understands and accepts `var` hoisting
+3. You're maintaining legacy code that can't be changed
+
+For new code, using `let`/`const` with the `no-var` rule is better.
+
+## Related Rules
+
+- [no-var](/rules/no-var) - Prefer let/const over var
+- [no-use-before-define](/rules/no-use-before-define) - Disallow use before declaration
+- [prefer-const](/rules/prefer-const) - Prefer const when variable isn't reassigned
+
+## Further Reading
+
+- [JavaScript Scoping and Hoisting](https://www.adequatelygood.com/JavaScript-Scoping-and-Hoisting.html)
+- [MDN: var hoisting](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/var#var_hoisting)

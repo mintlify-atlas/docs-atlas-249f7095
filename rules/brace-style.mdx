@@ -1,0 +1,260 @@
+---
+title: brace-style
+description: Enforce consistent brace style for blocks
+---
+
+# brace-style
+
+Brace style determines where opening and closing braces are placed relative to control statements and code blocks.
+
+<Note>
+**Rule Type:** Layout  
+**Fixable:** Yes (automatically fixable)  
+**Deprecated:** Consider using Prettier
+</Note>
+
+## Rule Details
+
+This rule enforces consistent brace style for blocks.
+
+## Brace Styles
+
+### One True Brace Style (1tbs)
+
+Opening brace on same line as statement:
+
+```js
+if (foo) {
+  bar();
+} else {
+  baz();
+}
+```
+
+### Stroustrup
+
+`else`, `catch`, `finally` on own line:
+
+```js
+if (foo) {
+  bar();
+}
+else {
+  baz();
+}
+```
+
+### Allman
+
+All braces on their own lines:
+
+```js
+if (foo)
+{
+  bar();
+}
+else
+{
+  baz();
+}
+```
+
+## Options
+
+### `"1tbs"` (default)
+
+Enforce one true brace style.
+
+**Incorrect:**
+
+```js
+function foo()
+{
+  return true;
+}
+
+if (foo)
+{
+  bar();
+}
+
+if (foo) {
+  bar();
+}
+else {
+  baz();
+}
+```
+
+**Correct:**
+
+```js
+function foo() {
+  return true;
+}
+
+if (foo) {
+  bar();
+}
+
+if (foo) {
+  bar();
+} else {
+  baz();
+}
+
+try {
+  somethingRisky();
+} catch(e) {
+  handleError();
+}
+```
+
+### `"stroustrup"`
+
+**Incorrect:**
+
+```js
+function foo()
+{
+  return true;
+}
+
+if (foo) {
+  bar();
+} else {
+  baz();
+}
+```
+
+**Correct:**
+
+```js
+function foo() {
+  return true;
+}
+
+if (foo) {
+  bar();
+}
+else {
+  baz();
+}
+
+try {
+  somethingRisky();
+}
+catch(e) {
+  handleError();
+}
+```
+
+### `"allman"`
+
+**Incorrect:**
+
+```js
+function foo() {
+  return true;
+}
+
+if (foo) {
+  bar();
+} else {
+  baz();
+}
+```
+
+**Correct:**
+
+```js
+function foo()
+{
+  return true;
+}
+
+if (foo)
+{
+  bar();
+}
+else
+{
+  baz();
+}
+
+try
+{
+  somethingRisky();
+}
+catch(e)
+{
+  handleError();
+}
+```
+
+### `allowSingleLine`
+
+Allow opening and closing braces on same line.
+
+```js
+// With { "allowSingleLine": true }
+if (foo) { bar(); }  // OK
+
+if (foo) { bar(); } else { baz(); }  // OK
+
+function nop() { return; }  // OK
+```
+
+## Configuration Examples
+
+```js
+// Default: 1tbs
+{
+  "rules": {
+    "brace-style": "error"
+  }
+}
+
+// Stroustrup
+{
+  "rules": {
+    "brace-style": ["error", "stroustrup"]
+  }
+}
+
+// Allman
+{
+  "rules": {
+    "brace-style": ["error", "allman"]
+  }
+}
+
+// With single-line exception
+{
+  "rules": {
+    "brace-style": ["error", "1tbs", { 
+      "allowSingleLine": true 
+    }]
+  }
+}
+```
+
+## When Not to Use It
+
+<Tip>
+Most modern projects use Prettier for formatting. If you use Prettier, disable this rule.
+</Tip>
+
+Disable if:
+- You use Prettier or another formatter
+- Your team hasn't agreed on a brace style
+- You don't want to enforce consistency
+
+## Related Rules
+
+- [block-spacing](/rules/block-spacing)
+- [space-before-blocks](/rules/space-before-blocks)
+
+## Further Reading
+
+- [Indent Style (Wikipedia)](https://en.wikipedia.org/wiki/Indent_style)

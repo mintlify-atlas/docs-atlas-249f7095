@@ -1,0 +1,292 @@
+---
+title: no-unmodified-loop-condition
+description: Disallow unmodified loop conditions
+---
+
+# no-unmodified-loop-condition
+
+Loop conditions that are never modified in the loop body usually indicate a mistake.
+
+<Note>
+**Rule Type:** Problem  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+If a variable appears in a loop condition but is never modified inside the loop, the loop will either never execute or become infinite. This is almost always a bug.
+
+```js
+// Bug: 'node' is never modified
+while (node) {
+    doSomething(node);
+}
+// This loop either never runs or runs forever!
+```
+
+## Rule Details
+
+This rule finds references in loop conditions and checks whether the variables are modified in the loop body.
+
+**What it checks:**
+- Variables in loop conditions
+- Binary expressions in conditions
+- Ternary expressions in conditions
+
+**What it ignores:**
+- Dynamic expressions (function calls, yield, etc.)
+- Object properties (they might have getters)
+
+## Examples
+
+### Incorrect Code
+
+```js
+// Variable never modified
+let node = something;
+while (node) {
+    doSomething(node);
+}
+node = other; // Too late - modified after loop
+
+// For loop condition never changes
+for (let j = 0; j < 5;) {
+    doSomething(j); // j is never incremented
+}
+
+// Condition variable not updated
+while (node !== root) {
+    doSomething(node);
+    // node is never changed
+}
+```
+
+### Correct Code
+
+```js
+// Variable modified in loop
+while (node) {
+    doSomething(node);
+    node = node.parent; // Updated each iteration
+}
+
+// For loop properly increments
+for (let j = 0; j < items.length; ++j) {
+    doSomething(items[j]);
+}
+
+// Condition properly updated
+while (node !== root) {
+    doSomething(node);
+    node = node.parent; // Both sides of !== can change
+}
+
+// Ternary expression updated
+while (node ? A : B) {
+    doSomething(node);
+    node = node.parent; // node affects the ternary
+}
+
+// Property access (might be a getter)
+while (obj.foo) {
+    doSomething(obj); // obj.foo might have side effects
+}
+
+// Function call can return different values
+while (check(obj)) {
+    doSomething(obj); // check() might examine changing state
+}
+```
+
+## Common Patterns
+
+### Linked List Traversal
+
+```js
+// Wrong: node never updated
+let node = head;
+while (node) {
+    process(node);
+} // Infinite loop if head exists!
+
+// Right: node updated each iteration
+let node = head;
+while (node) {
+    process(node);
+    node = node.next;
+}
+```
+
+### Array Iteration
+
+```js
+// Wrong: index never incremented  
+let i = 0;
+while (i < array.length) {
+    process(array[i]); // i never changes!
+}
+
+// Right: index incremented
+let i = 0;
+while (i < array.length) {
+    process(array[i]);
+    i++;
+}
+
+// Better: use for loop
+for (let i = 0; i < array.length; i++) {
+    process(array[i]);
+}
+
+// Best: use array methods
+array.forEach(process);
+```
+
+### Breaking Out of Loop
+
+```js
+// Wrong: condition never changes, relies on break
+while (condition) {
+    if (shouldStop) {
+        break; // Only way to exit
+    }
+    doWork();
+}
+
+// Right: condition can change, or use different loop
+let keepGoing = true;
+while (keepGoing) {
+    if (shouldStop) {
+        keepGoing = false;
+    }
+    doWork();
+}
+
+// Or restructure:
+while (!shouldStop) {
+    doWork();
+    // update shouldStop
+}
+```
+
+## Why Properties and Functions Are Ignored
+
+<Tip>
+Properties and function calls are not checked because they might have side effects or dynamic behavior.
+</Tip>
+
+### Properties Might Be Getters
+
+```js
+// This is OK - getter might return different values
+while (obj.hasMore) {
+    process(obj.getNext());
+}
+
+const obj = {
+    _index: 0,
+    get hasMore() {
+        return this._index < 10; // Checks current state
+    },
+    getNext() {
+        return this._index++;
+    }
+};
+```
+
+### Functions Can Examine State
+
+```js
+// This is OK - function checks external state
+let count = 0;
+while (shouldContinue()) {
+    doWork();
+    count++;
+}
+
+function shouldContinue() {
+    return count < 10; // Examines count
+}
+```
+
+## Fixing Infinite Loops
+
+### Update the Condition Variable
+
+```js
+// Before: infinite loop
+while (node) {
+    doSomething(node);
+}
+
+// After: properly terminates
+while (node) {
+    doSomething(node);
+    node = node.next;
+}
+```
+
+### Use a Different Loop Type
+
+```js
+// Before: manual index management
+let i = 0;
+while (i < items.length) {
+    process(items[i]);
+    i++;
+}
+
+// After: simpler and less error-prone
+for (let i = 0; i < items.length; i++) {
+    process(items[i]);
+}
+
+// Or even better:
+for (const item of items) {
+    process(item);
+}
+```
+
+### Add Proper Exit Condition
+
+```js
+// Before: relies only on break
+while (true) {
+    const item = getNextItem();
+    if (!item) break;
+    process(item);
+}
+
+// After: clear condition
+let item = getNextItem();
+while (item) {
+    process(item);
+    item = getNextItem();
+}
+```
+
+## When Not to Use It
+
+You might want to disable this rule if:
+
+1. Your code intentionally uses infinite loops with explicit breaks
+2. You have complex loop conditions that the rule can't analyze correctly
+
+However, in most cases, these patterns can be refactored to be clearer.
+
+```js
+// If you must have an infinite loop, be explicit:
+/* eslint-disable no-unmodified-loop-condition */
+while (true) {
+    const shouldContinue = checkCondition();
+    if (!shouldContinue) break;
+    doWork();
+}
+/* eslint-enable no-unmodified-loop-condition */
+```
+
+## Related Rules
+
+- [no-unreachable-loop](/rules/no-unreachable-loop)
+- [no-constant-condition](/rules/no-constant-condition)
+- [for-direction](/rules/for-direction)

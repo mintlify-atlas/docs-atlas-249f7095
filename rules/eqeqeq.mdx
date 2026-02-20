@@ -1,0 +1,261 @@
+---
+title: eqeqeq
+description: Require === and !== instead of == and !=
+---
+
+# eqeqeq
+
+It's considered good practice to use type-safe equality operators `===` and `!==` instead of `==` and `!=`.
+
+<Note>
+**Rule Type:** Suggestion  
+**Fixable:** Yes (in some cases)
+</Note>
+
+## Why This Rule Exists
+
+The `==` and `!=` operators do type coercion following obscure rules, leading to unexpected results:
+
+```js
+[] == false    // true
+[] == ![]      // true  
+3 == "03"      // true
+```
+
+Using `===` and `!==` avoids these surprises by not performing type coercion.
+
+## Rule Details
+
+This rule enforces use of type-safe equality operators.
+
+## Examples
+
+### Incorrect Code
+
+```js
+if (x == 42) { }
+
+if ("" == text) { }
+
+if (obj.getStuff() != undefined) { }
+```
+
+### Correct Code
+
+```js
+if (x === 42) { }
+
+if ("" === text) { }
+
+if (obj.getStuff() !== undefined) { }
+```
+
+## Options
+
+### `"always"` (default)
+
+Enforce `===` and `!==` in every situation.
+
+**Incorrect:**
+
+```js
+a == b
+foo == true
+bananas != 1
+value == undefined
+typeof foo == 'undefined'
+foo == null
+```
+
+**Correct:**
+
+```js
+a === b
+foo === true
+bananas !== 1
+value === undefined
+typeof foo === 'undefined'
+foo === null
+```
+
+#### `null` option
+
+Customize how the rule treats `null` comparisons:
+
+- `"always"` (default) - Always use `===` or `!==`
+- `"never"` - Never use `===` or `!==` with `null`
+- `"ignore"` - Don't check `null` comparisons
+
+```js
+// With { "null": "ignore" }
+foo == null  // OK
+foo === null // Also OK
+```
+
+### `"smart"`
+
+Allows `==` and `!=` in these cases:
+- Comparing two literal values
+- Evaluating `typeof`
+- Comparing against `null`
+
+**Incorrect:**
+
+```js
+// comparing two variables requires ===
+a == b
+
+// only one side is a literal
+foo == true
+bananas != 1
+
+// comparing to undefined requires ===
+value == undefined
+```
+
+**Correct:**
+
+```js
+typeof foo == 'undefined'
+'hello' != 'world'
+0 == 0
+true == true
+foo == null
+```
+
+## Common Patterns
+
+### null/undefined Checks
+
+<Tip>
+The one useful case for `==` is checking for null OR undefined.
+</Tip>
+
+```js
+// Using ==
+if (value == null) {
+    // true if value is null OR undefined
+}
+
+// Equivalent with ===
+if (value === null || value === undefined) {
+    // Same but more verbose
+}
+
+// Modern approach
+if (value ?? false) {
+    // Use nullish coalescing
+}
+```
+
+### Type Coercion Surprises
+
+<Warning>
+These comparisons with == are all true, but probably not what you want!
+</Warning>
+
+```js
+// Array coercion
+[] == false        // true
+[] == ![]          // true
+[] == ''           // true
+
+// String coercion
+'' == 0            // true
+'0' == 0           // true
+'\n' == 0          // true
+
+// Number coercion
+3 == '03'          // true
+true == 1          // true
+false == 0         // true
+
+// null/undefined
+null == undefined  // true
+```
+
+### Safe Type Coercion
+
+```js
+// Wrong: Relying on coercion
+if (arr.length == 0) { }
+
+// Right: Explicit comparison
+if (arr.length === 0) { }
+
+// Wrong: String coercion
+if (value == '0') { }
+
+// Right: Explicit types
+if (String(value) === '0') { }
+if (value === 0 || value === '0') { }
+```
+
+## Configuration Examples
+
+```js
+// Always use ===
+{
+  "rules": {
+    "eqeqeq": "error"
+  }
+}
+
+// Ignore null comparisons
+{
+  "rules": {
+    "eqeqeq": ["error", "always", { 
+      "null": "ignore" 
+    }]
+  }
+}
+
+// Smart mode
+{
+  "rules": {
+    "eqeqeq": ["error", "smart"]
+  }
+}
+```
+
+## Auto-fixing
+
+This rule can auto-fix when:
+- One operand is a `typeof` expression
+- Both operands are literals with the same type
+
+```bash
+eslint --fix your-file.js
+```
+
+## When Not to Use It
+
+Disable if you don't want to enforce a style for equality operators. However, this is generally not recommended - the type-safe operators prevent many bugs.
+
+## Migration Tips
+
+### Finding Issues
+
+```bash
+# Find all == and != in your codebase
+eslint . --rule 'eqeqeq: error'
+```
+
+### Common Fixes
+
+```js
+// Before
+if (user.age == 18) { }
+if (value != null) { }
+if (typeof x == 'number') { }
+
+// After
+if (user.age === 18) { }
+if (value !== null && value !== undefined) { }
+if (typeof x === 'number') { }
+```
+
+## Related Rules
+
+- [no-eq-null](/rules/no-eq-null)
+- [no-implicit-coercion](/rules/no-implicit-coercion)

@@ -1,0 +1,293 @@
+---
+title: no-promise-executor-return
+description: Disallow returning values from Promise executor functions
+---
+
+# no-promise-executor-return
+
+The executor function passed to `new Promise` should not return a value. The return value is ignored and returning a value is usually a mistake.
+
+<Note>
+**Rule Type:** Problem  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+The executor function of a Promise should call `resolve()` or `reject()` to settle the promise. The return value of the executor is ignored, so returning a value is pointless and usually indicates a misunderstanding of how Promises work.
+
+```js
+new Promise(function executor(resolve, reject) {
+    readFile('foo.txt', function(err, result) {
+        if (err) {
+            reject(err);
+        } else {
+            resolve(result);
+        }
+    });
+});
+```
+
+## Rule Details
+
+This rule disallows returning values from Promise executor functions. Only `return` without a value (for control flow) is allowed.
+
+## Examples
+
+### Incorrect Code
+
+```js
+// Returning a default value
+new Promise((resolve, reject) => {
+    if (someCondition) {
+        return defaultResult; // Error: this value is ignored
+    }
+    getSomething((err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+    });
+});
+
+// Implicit return from arrow function
+new Promise((resolve, reject) => getSomething((err, data) => {
+    if (err) reject(err);
+    else resolve(data);
+})); // Error: getSomething's return value is ignored
+
+// Explicit return value
+new Promise(() => {
+    return 1; // Error
+});
+
+// Arrow function implicit return
+new Promise(r => r(1)); // Error: returns result of r(1)
+```
+
+### Correct Code
+
+```js
+// Use resolve instead of return
+new Promise((resolve, reject) => {
+    if (someCondition) {
+        resolve(defaultResult); // Correct
+        return; // OK: empty return for control flow
+    }
+    getSomething((err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+    });
+});
+
+// Add braces to prevent implicit return
+new Promise((resolve, reject) => {
+    getSomething((err, data) => {
+        if (err) reject(err);
+        else resolve(data);
+    });
+});
+
+// Wrap body in braces
+new Promise(r => { r(1); });
+
+// Better: Use Promise.resolve for simple cases
+Promise.resolve(1);
+```
+
+## Common Patterns
+
+### Mixing Return with Resolve
+
+<Warning>
+Don't confuse `return` with `resolve()`. They serve different purposes in Promise executors.
+</Warning>
+
+```js
+// Wrong: return doesn't settle the promise
+new Promise((resolve, reject) => {
+    if (condition) {
+        return value; // Doesn't work!
+    }
+});
+
+// Right: resolve settles the promise
+new Promise((resolve, reject) => {
+    if (condition) {
+        resolve(value);
+        return; // Optional: for control flow
+    }
+});
+```
+
+### Arrow Function Gotchas
+
+```js
+// Wrong: Implicit return
+new Promise(resolve => doAsyncWork(resolve));
+
+// Right: Explicit function body
+new Promise(resolve => {
+    doAsyncWork(resolve);
+});
+
+// Or use Promise wrapper
+new Promise((resolve, reject) => {
+    doAsyncWork()
+        .then(resolve)
+        .catch(reject);
+});
+
+// Better: Avoid Promise constructor entirely
+function myPromise() {
+    return doAsyncWork();
+}
+```
+
+### Early Exit Pattern
+
+```js
+// Use empty return for early exit (this is OK)
+new Promise((resolve, reject) => {
+    if (cacheHit) {
+        resolve(cachedValue);
+        return; // Stop execution
+    }
+    
+    fetchFromServer((err, data) => {
+        if (err) reject(err);
+        else resolve(data);
+    });
+});
+```
+
+## Options
+
+### `allowVoid`
+
+**Type:** `boolean`  
+**Default:** `false`
+
+Allows returning void values (explicit `void` operator).
+
+```js
+// With { "allowVoid": true }
+
+// These are allowed:
+new Promise((resolve, reject) => {
+    if (someCondition) {
+        return void resolve(defaultResult); // OK
+    }
+});
+
+new Promise((resolve, reject) => void getSomething((err, data) => {
+    if (err) reject(err);
+    else resolve(data);
+})); // OK
+
+new Promise(r => void r(1)); // OK
+```
+
+<Tip>
+The `allowVoid` option is useful if you prefer the explicit `void` operator to make it clear you're intentionally discarding a return value.
+</Tip>
+
+## Configuration
+
+```js
+// Disallow all returns with values
+{
+  "rules": {
+    "no-promise-executor-return": "error"
+  }
+}
+
+// Allow void returns
+{
+  "rules": {
+    "no-promise-executor-return": ["error", { 
+      "allowVoid": true 
+    }]
+  }
+}
+```
+
+## Best Practices
+
+### 1. Call resolve/reject, don't return
+
+```js
+// Wrong
+new Promise((resolve) => {
+    return value;
+});
+
+// Right
+Promise.resolve(value);
+```
+
+### 2. Use Promise.resolve/reject for immediate values
+
+```js
+// Unnecessary Promise constructor
+new Promise(resolve => {
+    resolve(value);
+});
+
+// Simpler
+Promise.resolve(value);
+```
+
+### 3. Avoid the Promise constructor when possible
+
+```js
+// Unnecessary wrapping
+function getUser(id) {
+    return new Promise((resolve, reject) => {
+        fetch(`/api/user/${id}`)
+            .then(resolve)
+            .catch(reject);
+    });
+}
+
+// Just return the promise directly
+function getUser(id) {
+    return fetch(`/api/user/${id}`);
+}
+```
+
+### 4. Use async/await instead
+
+```js
+// Complex Promise constructor
+function getData() {
+    return new Promise((resolve, reject) => {
+        fetchUser((err, user) => {
+            if (err) return reject(err);
+            
+            fetchPosts(user.id, (err, posts) => {
+                if (err) return reject(err);
+                resolve({ user, posts });
+            });
+        });
+    });
+}
+
+// Cleaner with async/await
+async function getData() {
+    const user = await fetchUserPromise();
+    const posts = await fetchPostsPromise(user.id);
+    return { user, posts };
+}
+```
+
+## When Not to Use It
+
+This rule should almost never be disabled. If you're returning values from Promise executors, you likely have a bug or misunderstanding.
+
+## Related Rules
+
+- [no-async-promise-executor](/rules/no-async-promise-executor)
+- [prefer-promise-reject-errors](/rules/prefer-promise-reject-errors)
+
+## Further Reading
+
+- [MDN: Promise Constructor](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)

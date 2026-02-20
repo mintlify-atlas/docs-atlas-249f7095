@@ -1,0 +1,699 @@
+---
+title: Formatters
+description: Learn about ESLint output formatters and how to customize the appearance of linting results
+---
+
+# Formatters
+
+ESLint formatters control the appearance of linting results in the CLI. ESLint comes with several built-in formatters and supports third-party formatters as well.
+
+## Using Formatters
+
+Specify a formatter using the `--format` or `-f` flag:
+
+```bash
+npx eslint --format <formatter-name> file.js
+npx eslint -f <formatter-name> file.js
+```
+
+<Info>
+The default formatter is `stylish`, which provides human-readable output with colors.
+</Info>
+
+## Built-in Formatters
+
+ESLint includes four built-in formatters:
+
+<CardGroup cols={2}>
+  <Card title="stylish" icon="paintbrush" color="#10b981">
+    **Default formatter**
+    
+    Human-readable with colors and context
+  </Card>
+  <Card title="json" icon="code" color="#3b82f6">
+    **JSON output**
+    
+    For programmatic processing
+  </Card>
+  <Card title="json-with-metadata" icon="file-code" color="#8b5cf6">
+    **JSON + metadata**
+    
+    Includes rule metadata
+  </Card>
+  <Card title="html" icon="globe" color="#f59e0b">
+    **HTML report**
+    
+    Visual browser-based report
+  </Card>
+</CardGroup>
+
+### stylish (Default)
+
+The `stylish` formatter provides clean, readable output with color coding:
+
+```bash
+npx eslint --format stylish file.js
+```
+
+<Tabs>
+  <Tab title="Example Output">
+    ```
+    file.js
+      1:10  error    'addOne' is defined but never used  no-unused-vars
+      2:9   error    Use the isNaN function to compare   use-isnan
+      3:16  error    Unexpected space before unary       space-unary-ops
+      3:20  warning  Missing semicolon                   semi
+      5:7   error    Function 'addOne' expected return  consistent-return
+    
+    ✖ 5 problems (4 errors, 1 warning)
+      1 error and 1 warning potentially fixable with the `--fix` option.
+    ```
+  </Tab>
+  <Tab title="Features">
+    - Color-coded severity (red errors, yellow warnings)
+    - Line and column numbers
+    - Rule IDs for each violation
+    - Summary statistics
+    - Fixable issue indicators
+    - Groups by file
+  </Tab>
+  <Tab title="Usage">
+    ```bash
+    # Default (no flag needed)
+    npx eslint file.js
+    
+    # Explicit
+    npx eslint --format stylish file.js
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+Colors can be controlled with `--color` and `--no-color` flags, or via environment variables like `FORCE_COLOR`, `NO_COLOR`, or `NODE_DISABLE_COLORS`.
+</Note>
+
+### json
+
+Outputs JSON-serialized results for programmatic processing:
+
+```bash
+npx eslint --format json file.js
+```
+
+<Tabs>
+  <Tab title="Structure">
+    ```json
+    [
+      {
+        "filePath": "/path/to/file.js",
+        "messages": [
+          {
+            "ruleId": "no-unused-vars",
+            "severity": 2,
+            "message": "'addOne' is defined but never used.",
+            "line": 1,
+            "column": 10,
+            "messageId": "unusedVar",
+            "endLine": 1,
+            "endColumn": 16,
+            "suggestions": []
+          }
+        ],
+        "suppressedMessages": [],
+        "errorCount": 5,
+        "fatalErrorCount": 0,
+        "warningCount": 4,
+        "fixableErrorCount": 1,
+        "fixableWarningCount": 4,
+        "source": "function addOne(i) {...}"
+      }
+    ]
+    ```
+  </Tab>
+  <Tab title="Properties">
+    **File-level:**
+    - `filePath` - Absolute path to the file
+    - `messages` - Array of violations
+    - `errorCount` - Number of errors
+    - `warningCount` - Number of warnings
+    - `fixableErrorCount` - Fixable errors
+    - `fixableWarningCount` - Fixable warnings
+    - `source` - File source code
+    
+    **Message-level:**
+    - `ruleId` - Rule identifier
+    - `severity` - 1 (warn) or 2 (error)
+    - `message` - Violation message
+    - `line`, `column` - Start position
+    - `endLine`, `endColumn` - End position
+    - `fix` - Auto-fix information (if available)
+  </Tab>
+  <Tab title="Usage">
+    ```bash
+    # Output to console
+    npx eslint --format json file.js
+    
+    # Save to file
+    npx eslint --format json file.js > results.json
+    
+    # Use with jq
+    npx eslint --format json file.js | jq '.[] | .errorCount'
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+Use the JSON formatter when:
+- Building CI/CD integrations
+- Creating custom reporting tools
+- Processing results programmatically
+- Storing results in databases
+</Tip>
+
+### json-with-metadata
+
+Extends the JSON formatter with rule metadata:
+
+```bash
+npx eslint --format json-with-metadata file.js
+```
+
+<Tabs>
+  <Tab title="Structure">
+    ```json
+    {
+      "results": [
+        {
+          "filePath": "/path/to/file.js",
+          "messages": [...],
+          "errorCount": 5,
+          "warningCount": 4
+        }
+      ],
+      "metadata": {
+        "cwd": "/path/to/project",
+        "rulesMeta": {
+          "no-unused-vars": {
+            "type": "problem",
+            "docs": {
+              "description": "Disallow unused variables",
+              "recommended": true,
+              "url": "https://eslint.org/docs/rules/no-unused-vars"
+            },
+            "hasSuggestions": true,
+            "schema": [...]
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Metadata Fields">
+    **rulesMeta contains:**
+    - `type` - Rule type (problem, suggestion, layout)
+    - `docs` - Documentation information
+      - `description` - Rule description
+      - `recommended` - If rule is recommended
+      - `url` - Documentation URL
+    - `hasSuggestions` - If rule provides suggestions
+    - `fixable` - If rule is auto-fixable
+    - `schema` - Rule options schema
+    - `messages` - Rule message templates
+  </Tab>
+  <Tab title="Usage">
+    ```bash
+    npx eslint --format json-with-metadata file.js
+    ```
+    
+    Useful for:
+    - Generating documentation
+    - Building rule explorers
+    - Creating rich IDE integrations
+    - Understanding rule capabilities
+  </Tab>
+</Tabs>
+
+### html
+
+Generates an interactive HTML report:
+
+```bash
+npx eslint --format html file.js > report.html
+```
+
+<Tabs>
+  <Tab title="Features">
+    **Interactive HTML report with:**
+    - Color-coded violations
+    - Sortable columns
+    - Filterable results
+    - File grouping
+    - Rule descriptions
+    - Click-to-expand details
+    - Summary statistics
+    - Professional styling
+  </Tab>
+  <Tab title="Usage">
+    ```bash
+    # Generate HTML report
+    npx eslint --format html src/ > report.html
+    
+    # Open in browser
+    npx eslint --format html src/ > report.html && open report.html
+    
+    # Multiple directories
+    npx eslint --format html src/ lib/ tests/ > report.html
+    ```
+  </Tab>
+  <Tab title="Best For">
+    - Team code reviews
+    - CI/CD artifacts
+    - Management reporting
+    - Historical tracking
+    - Non-technical stakeholders
+    - Visual presentations
+  </Tab>
+</Tabs>
+
+<Note>
+The HTML formatter is designed for viewing in a browser and includes all necessary CSS and JavaScript inline.
+</Note>
+
+## Saving Output to File
+
+<Tabs>
+  <Tab title="Shell Redirection">
+    ```bash
+    # Save JSON results
+    npx eslint --format json file.js > results.json
+    
+    # Save HTML report
+    npx eslint --format html src/ > report.html
+    
+    # Append to existing file
+    npx eslint --format json file.js >> all-results.json
+    ```
+  </Tab>
+  <Tab title="--output-file Flag">
+    ```bash
+    # Using -o flag
+    npx eslint -f json -o results.json file.js
+    
+    # Using full flag name
+    npx eslint --format html --output-file report.html src/
+    ```
+  </Tab>
+</Tabs>
+
+## Custom Formatters
+
+You can create and use custom formatters:
+
+### Local Custom Formatter
+
+<Steps>
+  <Step title="Create formatter file">
+    ```javascript my-formatter.js
+    module.exports = function(results, context) {
+      // results: array of linting results
+      // context: formatter context object
+      
+      let output = "";
+      let totalErrors = 0;
+      let totalWarnings = 0;
+      
+      results.forEach(result => {
+        const { filePath, messages } = result;
+        
+        if (messages.length > 0) {
+          output += `\n${filePath}\n`;
+          
+          messages.forEach(message => {
+            const { line, column, severity, message: msg, ruleId } = message;
+            const type = severity === 2 ? "ERROR" : "WARNING";
+            
+            output += `  ${line}:${column} ${type} ${msg} (${ruleId})\n`;
+            
+            if (severity === 2) totalErrors++;
+            else totalWarnings++;
+          });
+        }
+      });
+      
+      output += `\n${totalErrors} errors, ${totalWarnings} warnings\n`;
+      
+      return output;
+    };
+    ```
+  </Step>
+  
+  <Step title="Use the formatter">
+    ```bash
+    npx eslint --format ./my-formatter.js file.js
+    ```
+  </Step>
+</Steps>
+
+### NPM Package Formatter
+
+<Steps>
+  <Step title="Install formatter">
+    ```bash
+    npm install --save-dev eslint-formatter-pretty
+    # or
+    npm install --save-dev eslint-formatter-table
+    ```
+  </Step>
+  
+  <Step title="Use the formatter">
+    ```bash
+    # With prefix
+    npx eslint --format eslint-formatter-pretty file.js
+    
+    # Without prefix (ESLint adds it)
+    npx eslint --format pretty file.js
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+ESLint automatically adds the `eslint-formatter-` prefix if not present.
+</Tip>
+
+## Formatter Context
+
+Formatters receive two arguments:
+
+```javascript
+module.exports = function(results, context) {
+  // results: array of linting results
+  // context: formatter context
+};
+```
+
+### Results Array
+
+```javascript
+[
+  {
+    filePath: "/absolute/path/to/file.js",
+    messages: [
+      {
+        ruleId: "no-unused-vars",
+        severity: 2,  // 1 = warn, 2 = error
+        message: "'x' is defined but never used.",
+        line: 1,
+        column: 5,
+        nodeType: "Identifier",
+        messageId: "unusedVar",
+        endLine: 1,
+        endColumn: 6,
+        fix: {  // Only if fixable
+          range: [0, 10],
+          text: ""
+        },
+        suggestions: [  // Only if has suggestions
+          {
+            desc: "Remove unused variable",
+            fix: { range: [0, 10], text: "" }
+          }
+        ]
+      }
+    ],
+    suppressedMessages: [],  // Suppressed violations
+    errorCount: 1,
+    fatalErrorCount: 0,
+    warningCount: 0,
+    fixableErrorCount: 1,
+    fixableWarningCount: 0,
+    source: "const x = 5;\n",  // File source code
+    usedDeprecatedRules: []  // Deprecated rules used
+  }
+]
+```
+
+### Context Object
+
+```javascript
+{
+  cwd: "/absolute/path/to/project",
+  maxWarningsExceeded: {
+    maxWarnings: 10,
+    foundWarnings: 15
+  },
+  rulesMeta: {  // Only in json-with-metadata
+    "no-unused-vars": {
+      type: "problem",
+      docs: { /* ... */ },
+      hasSuggestions: true
+    }
+  }
+}
+```
+
+## Comparing Formatters
+
+<Tabs>
+  <Tab title="CLI Development">
+    **Best: stylish**
+    
+    ```bash
+    npx eslint --format stylish src/
+    ```
+    
+    - Human-readable
+    - Color-coded
+    - Quick scan of issues
+    - Shows line numbers
+  </Tab>
+  <Tab title="CI/CD">
+    **Best: json**
+    
+    ```bash
+    npx eslint --format json src/ > results.json
+    ```
+    
+    - Programmatically processable
+    - Can be stored/archived
+    - Integration-friendly
+    - Parseable by tools
+  </Tab>
+  <Tab title="Reports">
+    **Best: html**
+    
+    ```bash
+    npx eslint --format html src/ > report.html
+    ```
+    
+    - Visual presentation
+    - Shareable
+    - Non-technical friendly
+    - Interactive
+  </Tab>
+  <Tab title="Analysis">
+    **Best: json-with-metadata**
+    
+    ```bash
+    npx eslint --format json-with-metadata src/ > analysis.json
+    ```
+    
+    - Complete information
+    - Rule metadata included
+    - Documentation generation
+    - Advanced tooling
+  </Tab>
+</Tabs>
+
+## Popular Third-Party Formatters
+
+<AccordionGroup>
+<Accordion title="eslint-formatter-pretty" icon="star">
+
+Beautiful formatter with colors and context:
+
+```bash
+npm install --save-dev eslint-formatter-pretty
+npx eslint --format pretty src/
+```
+
+**Features:**
+- Syntax highlighting
+- Code context
+- File hyperlinks (VS Code, WebStorm)
+- Summary statistics
+
+</Accordion>
+
+<Accordion title="eslint-formatter-table" icon="table">
+
+Table-based output:
+
+```bash
+npm install --save-dev eslint-formatter-table
+npx eslint --format table src/
+```
+
+**Features:**
+- Tabular layout
+- Column alignment
+- Clear separation
+- Sortable data
+
+</Accordion>
+
+<Accordion title="eslint-formatter-gitlab" icon="gitlab">
+
+GitLab Code Quality format:
+
+```bash
+npm install --save-dev eslint-formatter-gitlab
+npx eslint --format gitlab src/ > gl-code-quality-report.json
+```
+
+**Use for:**
+- GitLab CI/CD integration
+- Code Quality widgets
+- Merge request reports
+
+</Accordion>
+
+<Accordion title="eslint-formatter-codeframe" icon="code">
+
+Shows code context with pointers:
+
+```bash
+npm install --save-dev eslint-formatter-codeframe
+npx eslint --format codeframe src/
+```
+
+**Features:**
+- Code snippets
+- Error pointers
+- Detailed context
+- Multiple lines
+
+</Accordion>
+</AccordionGroup>
+
+## Example Workflow
+
+<Tabs>
+  <Tab title="Development">
+    ```bash
+    # Quick checks during development
+    npx eslint src/
+    
+    # Or with watch mode
+    npx eslint-watch src/
+    ```
+  </Tab>
+  <Tab title="CI/CD">
+    ```bash
+    #!/bin/bash
+    
+    # Run ESLint and save results
+    npx eslint --format json src/ > eslint-results.json
+    
+    # Generate HTML report for artifacts
+    npx eslint --format html src/ > eslint-report.html
+    
+    # Check exit code
+    if [ $? -ne 0 ]; then
+      echo "ESLint found errors"
+      exit 1
+    fi
+    ```
+  </Tab>
+  <Tab title="Git Hooks">
+    ```bash
+    # .husky/pre-commit
+    
+    # Lint staged files
+    npx lint-staged
+    
+    # Or directly
+    npx eslint --format stylish $(git diff --cached --name-only --diff-filter=ACM | grep '\.js$')
+    ```
+  </Tab>
+  <Tab title="Package Scripts">
+    ```json package.json
+    {
+      "scripts": {
+        "lint": "eslint src/",
+        "lint:fix": "eslint --fix src/",
+        "lint:report": "eslint --format html src/ > reports/eslint.html",
+        "lint:json": "eslint --format json src/ > reports/eslint.json",
+        "lint:ci": "eslint --format json --output-file reports/eslint.json src/"
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+<AccordionGroup>
+<Accordion title="Choose the Right Formatter" icon="bullseye">
+
+- **Development:** `stylish` for readability
+- **CI/CD:** `json` for processing
+- **Reports:** `html` for stakeholders
+- **Analysis:** `json-with-metadata` for tooling
+
+</Accordion>
+
+<Accordion title="Save Important Results" icon="floppy-disk">
+
+```bash
+# Save to file for later review
+npx eslint --format json src/ > results-$(date +%Y%m%d).json
+
+# Archive HTML reports
+npx eslint --format html src/ > reports/week-$(date +%U).html
+```
+
+</Accordion>
+
+<Accordion title="Combine Formatters" icon="layer-group">
+
+Output to console AND file:
+
+```bash
+# Using tee (Unix)
+npx eslint --format json src/ | tee results.json
+
+# Or run twice
+npx eslint src/ && npx eslint --format json src/ > results.json
+```
+
+</Accordion>
+
+<Accordion title="Format Warnings Separately" icon="filter">
+
+```bash
+# Only show errors
+npx eslint --quiet src/
+
+# Then check warnings separately
+npx eslint src/
+```
+
+</Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Command Line" icon="terminal" href="./command-line">
+    CLI options including --format
+  </Card>
+  <Card title="Integrations" icon="puzzle-piece" href="./integrations">
+    Editor and build tool integrations
+  </Card>
+  <Card title="Configuration" icon="gear" href="./configuration">
+    Configure ESLint for your project
+  </Card>
+  <Card title="Core Concepts" icon="book" href="./core-concepts">
+    Understanding ESLint fundamentals
+  </Card>
+</CardGroup>

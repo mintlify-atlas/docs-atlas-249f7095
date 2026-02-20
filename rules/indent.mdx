@@ -1,0 +1,257 @@
+---
+title: indent
+description: Enforce consistent indentation
+---
+
+# indent
+
+Enforce consistent indentation throughout your code.
+
+<Note>
+**Rule Type:** Layout  
+**Fixable:** Yes (automatically fixable)  
+**Deprecated:** Consider using Prettier
+</Note>
+
+## Rule Details
+
+This rule enforces a consistent indentation style. The default is 4 spaces.
+
+## Options
+
+The first option is the indent size:
+
+- Number (e.g., `2`, `4`) - Number of spaces
+- `"tab"` - Use tab character
+
+```js
+// 2 spaces
+{
+  "indent": ["error", 2]
+}
+
+// 4 spaces (default)
+{
+  "indent": ["error", 4]
+}
+
+// Tabs
+{
+  "indent": ["error", "tab"]
+}
+```
+
+## Examples
+
+### Incorrect (default 4 spaces)
+
+```js
+if (a) {
+  b=c;
+  function foo(d) {
+    e=f;
+  }
+}
+```
+
+### Correct (default 4 spaces)
+
+```js
+if (a) {
+    b=c;
+    function foo(d) {
+        e=f;
+    }
+}
+```
+
+## Advanced Options
+
+The second parameter is an object with many options:
+
+### `SwitchCase`
+
+**Default:** `0`
+
+Indent level for `case` clauses:
+
+```js
+// With { "SwitchCase": 1 } and 2 spaces
+switch(a){
+  case "a":
+    break;
+  case "b":
+    break;
+}
+```
+
+### `VariableDeclarator`
+
+**Default:** `1`
+
+Indent level for multi-line variable declarations:
+
+```js
+// With { "VariableDeclarator": 1 } and 2 spaces
+var a,
+  b,
+  c;
+```
+
+### `MemberExpression`
+
+**Default:** `1`
+
+Indent level for multi-line property chains:
+
+```js
+// With { "MemberExpression": 1 } and 2 spaces
+foo
+  .bar
+  .baz();
+```
+
+### `FunctionDeclaration`
+
+Configure function declaration indentation:
+
+```js
+{
+  "indent": ["error", 2, {
+    "FunctionDeclaration": {
+      "parameters": 1,
+      "body": 1
+    }
+  }]
+}
+```
+
+### `CallExpression`
+
+Configure function call indentation:
+
+```js
+{
+  "indent": ["error", 2, {
+    "CallExpression": {
+      "arguments": 1
+    }
+  }]
+}
+```
+
+### `ignoredNodes`
+
+Array of selectors to ignore:
+
+```js
+{
+  "indent": ["error", 2, {
+    "ignoredNodes": ["ConditionalExpression"]
+  }]
+}
+```
+
+## Configuration Examples
+
+```js
+// 2 spaces
+{
+  "rules": {
+    "indent": ["error", 2]
+  }
+}
+
+// 4 spaces  
+{
+  "rules": {
+    "indent": ["error", 4]
+  }
+}
+
+// Tabs
+{
+  "rules": {
+    "indent": ["error", "tab"]
+  }
+}
+
+// 2 spaces with switch case indent
+{
+  "rules": {
+    "indent": ["error", 2, { 
+      "SwitchCase": 1 
+    }]
+  }
+}
+
+// Complex configuration
+{
+  "rules": {
+    "indent": ["error", 2, {
+      "SwitchCase": 1,
+      "VariableDeclarator": 1,
+      "MemberExpression": 1,
+      "FunctionDeclaration": {
+        "parameters": 1,
+        "body": 1
+      },
+      "CallExpression": {
+        "arguments": 1
+      }
+    }]
+  }
+}
+```
+
+## Common Patterns
+
+### Switch Statements
+
+```js
+// Without SwitchCase: 1
+switch (a) {
+case 1:
+    break;
+}
+
+// With SwitchCase: 1 and 2 spaces
+switch (a) {
+  case 1:
+    break;
+}
+```
+
+### Chained Methods
+
+```js
+// With MemberExpression: 1 and 2 spaces
+chain
+  .filter(x => x > 0)
+  .map(x => x * 2)
+  .forEach(console.log);
+```
+
+### Multi-line Variables
+
+```js
+// With VariableDeclarator: 2 and 2 spaces
+var a,
+    b,
+    c;
+```
+
+## When Not to Use It
+
+<Tip>
+Most modern projects use Prettier for formatting. If you use Prettier, disable this rule.
+</Tip>
+
+Disable if:
+- You use Prettier or another formatter
+- You don't want to enforce indentation
+- Your team hasn't agreed on indentation style
+
+## Related Rules
+
+- [indent-legacy](/rules/indent-legacy)

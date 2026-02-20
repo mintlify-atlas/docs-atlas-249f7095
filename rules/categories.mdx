@@ -1,0 +1,122 @@
+---
+title: Rule Categories
+description: Understanding ESLint rule categories and their purposes
+---
+
+# Rule Categories
+
+ESLint rules are organized into three main categories based on their purpose. Understanding these categories helps you configure rules appropriately for your project.
+
+## Problem Rules
+
+Problem rules identify code that will cause errors or could lead to bugs. These rules help catch mistakes before runtime.
+
+**Characteristics:**
+- Prevent runtime errors
+- Catch logical mistakes
+- Identify code that doesn't work as intended
+- Usually should be set to "error" level
+
+**Examples:**
+
+- [array-callback-return](/rules/array-callback-return) - Missing return statements in array methods can cause bugs
+- [no-await-in-loop](/rules/no-await-in-loop) - Sequential awaits may indicate a parallelization opportunity
+- [no-constant-binary-expression](/rules/no-constant-binary-expression) - Expressions that always evaluate the same way are usually mistakes
+- [no-constructor-return](/rules/no-constructor-return) - Returning values from constructors is likely an error
+- [no-unreachable-loop](/rules/no-unreachable-loop) - Loops that can't iterate more than once are bugs
+
+<Warning>
+Problem rules should rarely be disabled as they catch real errors. If you need to disable one, add a comment explaining why.
+</Warning>
+
+## Suggestion Rules
+
+Suggestion rules recommend better ways to write code. They don't prevent errors but encourage best practices and more maintainable code.
+
+**Characteristics:**
+- Enforce coding conventions
+- Improve code quality and readability
+- Prevent potential issues
+- Can often be configured based on team preferences
+
+**Examples:**
+
+- [block-scoped-var](/rules/block-scoped-var) - Treat var as if it were block scoped
+- [default-case](/rules/default-case) - Require default cases in switch statements
+- [eqeqeq](/rules/eqeqeq) - Require === and !== instead of == and !=
+- [no-eval](/rules/no-eval) - Disallow dangerous eval() function
+- [prefer-promise-reject-errors](/rules/prefer-promise-reject-errors) - Require Error objects in promise rejections
+
+<Tip>
+Suggestion rules are great for establishing team coding standards. Configure them based on your project's style guide.
+</Tip>
+
+## Layout Rules
+
+Layout rules care about code formatting and visual consistency. They don't affect how code executes, only how it looks.
+
+**Characteristics:**
+- Enforce consistent formatting
+- Improve code readability
+- Prevent style inconsistencies
+- Can often be auto-fixed
+- Many are now deprecated in favor of Prettier
+
+**Examples:**
+
+- [array-bracket-spacing](/rules/array-bracket-spacing) - Spacing inside array brackets
+- [brace-style](/rules/brace-style) - Consistent brace placement
+- [comma-dangle](/rules/comma-dangle) - Trailing commas in object/array literals
+- [indent](/rules/indent) - Consistent indentation
+- [quotes](/rules/quotes) - Consistent quote style
+- [semi](/rules/semi) - Semicolon usage
+
+<Note>
+Many teams now use Prettier for formatting and disable layout rules. Consider using Prettier with eslint-config-prettier to avoid conflicts.
+</Note>
+
+## Choosing Rule Severity
+
+How to set severity levels based on category:
+
+### Problem Rules → Error
+```js
+rules: {
+  'no-unreachable-loop': 'error',
+  'no-constructor-return': 'error'
+}
+```
+
+### Suggestion Rules → Error or Warn
+```js
+rules: {
+  'eqeqeq': 'error',           // Enforce strictly
+  'no-alert': 'warn',          // Allow but discourage
+  'prefer-const': 'warn'       // Suggest but don't block
+}
+```
+
+### Layout Rules → Error or Off
+```js
+rules: {
+  'semi': ['error', 'always'], // If not using Prettier
+  'indent': 'off',             // If using Prettier
+  'quotes': 'off'              // Let Prettier handle it
+}
+```
+
+## Recommended Configurations
+
+ESLint provides preset configurations:
+
+- `eslint:recommended` - Core set of problem rules
+- `eslint:all` - All available rules (not recommended for production)
+
+```js
+module.exports = {
+  extends: ['eslint:recommended'],
+  rules: {
+    // Override or add additional rules
+  }
+};
+```

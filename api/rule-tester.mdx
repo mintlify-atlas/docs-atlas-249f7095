@@ -1,0 +1,424 @@
+---
+title: RuleTester
+description: Test framework for ESLint rules
+---
+
+The `RuleTester` class is used to test ESLint rules. It integrates with testing frameworks like Mocha and Jest to provide a structured way to write and run rule tests.
+
+## Constructor
+
+```javascript
+const { RuleTester } = require("eslint");
+const ruleTester = new RuleTester(config);
+```
+
+<ParamField path="config" type="object">
+  Default configuration to use for all test cases.
+
+  <Expandable title="properties">
+    <ParamField path="languageOptions" type="object">
+      Language options for parsing (ecmaVersion, sourceType, etc.).
+    </ParamField>
+
+    <ParamField path="rules" type="object">
+      Default rule configurations.
+    </ParamField>
+
+    <ParamField path="settings" type="object">
+      Shared settings for rules.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Instance Methods
+
+### run()
+
+Runs test cases for a rule.
+
+```javascript
+ruleTester.run(ruleName, rule, tests);
+```
+
+<ParamField path="ruleName" type="string" required>
+  The name of the rule being tested.
+</ParamField>
+
+<ParamField path="rule" type="object" required>
+  The rule object with a `create()` method.
+</ParamField>
+
+<ParamField path="tests" type="object" required>
+  <Expandable title="properties">
+    <ParamField path="valid" type="Array<string | ValidTestCase>" required>
+      Array of test cases that should pass without errors.
+    </ParamField>
+
+    <ParamField path="invalid" type="InvalidTestCase[]" required>
+      Array of test cases that should produce errors.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Test Case Types
+
+### ValidTestCase
+
+A test case expected to pass without errors.
+
+<ParamField path="code" type="string" required>
+  The code to test.
+</ParamField>
+
+<ParamField path="name" type="string">
+  Name for the test case (displayed in test output).
+</ParamField>
+
+<ParamField path="options" type="any[]">
+  Options to pass to the rule.
+</ParamField>
+
+<ParamField path="languageOptions" type="object">
+  Language options for this test case.
+  
+  <Expandable title="properties">
+    <ParamField path="ecmaVersion" type="number | 'latest'">
+      ECMAScript version (e.g., 2020, "latest").
+    </ParamField>
+
+    <ParamField path="sourceType" type="'script' | 'module' | 'commonjs'">
+      The source type of the code.
+    </ParamField>
+
+    <ParamField path="parserOptions" type="object">
+      Additional parser options.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="settings" type="object">
+  Settings for this test case.
+</ParamField>
+
+<ParamField path="filename" type="string">
+  The fake filename for the test case.
+</ParamField>
+
+<ParamField path="only" type="boolean">
+  Run only this test case (requires framework support).
+</ParamField>
+
+### InvalidTestCase
+
+A test case expected to produce errors.
+
+<ParamField path="code" type="string" required>
+  The code to test.
+</ParamField>
+
+<ParamField path="errors" type="number | Array<TestCaseError>" required>
+  Expected errors. Can be a count or array of error objects.
+</ParamField>
+
+<ParamField path="output" type="string | null">
+  Expected code after autofixes. Use `null` to assert no autofix.
+</ParamField>
+
+<ParamField path="name" type="string">
+  Name for the test case.
+</ParamField>
+
+<ParamField path="options" type="any[]">
+  Options to pass to the rule.
+</ParamField>
+
+<ParamField path="languageOptions" type="object">
+  Language options for this test case.
+</ParamField>
+
+<ParamField path="settings" type="object">
+  Settings for this test case.
+</ParamField>
+
+<ParamField path="filename" type="string">
+  The fake filename for the test case.
+</ParamField>
+
+<ParamField path="only" type="boolean">
+  Run only this test case.
+</ParamField>
+
+### TestCaseError
+
+Describes an expected error in an invalid test case.
+
+<ParamField path="message" type="string | RegExp">
+  Expected error message or pattern.
+</ParamField>
+
+<ParamField path="messageId" type="string">
+  Expected message ID from rule's `meta.messages`.
+</ParamField>
+
+<ParamField path="data" type="object">
+  Expected data used to fill the message template.
+</ParamField>
+
+<ParamField path="line" type="number">
+  Expected 1-based line number.
+</ParamField>
+
+<ParamField path="column" type="number">
+  Expected 1-based column number.
+</ParamField>
+
+<ParamField path="endLine" type="number">
+  Expected 1-based end line number.
+</ParamField>
+
+<ParamField path="endColumn" type="number">
+  Expected 1-based end column number.
+</ParamField>
+
+<ParamField path="suggestions" type="object[]">
+  Expected suggestion objects.
+</ParamField>
+
+## Static Methods
+
+### RuleTester.setDefaultConfig()
+
+Sets the default configuration for all RuleTester instances.
+
+```javascript
+RuleTester.setDefaultConfig(config);
+```
+
+<ParamField path="config" type="object" required>
+  The default configuration object.
+</ParamField>
+
+### RuleTester.resetDefaultConfig()
+
+Resets the default configuration to the initial defaults.
+
+```javascript
+RuleTester.resetDefaultConfig();
+```
+
+### RuleTester.describe()
+
+Sets the describe function for grouping tests (automatically detected).
+
+```javascript
+RuleTester.describe(describeFn);
+```
+
+<ParamField path="describeFn" type="function" required>
+  The describe function from your test framework.
+</ParamField>
+
+### RuleTester.it()
+
+Sets the it function for individual tests (automatically detected).
+
+```javascript
+RuleTester.it(itFn);
+```
+
+<ParamField path="itFn" type="function" required>
+  The it function from your test framework.
+</ParamField>
+
+## Examples
+
+<Tabs>
+  <Tab title="Basic Test">
+    ```javascript
+    const { RuleTester } = require("eslint");
+    const rule = require("../rules/no-console");
+
+    const ruleTester = new RuleTester({
+      languageOptions: {
+        ecmaVersion: 2020,
+        sourceType: "module"
+      }
+    });
+
+    ruleTester.run("no-console", rule, {
+      valid: [
+        "console.info('test');",
+        "console.warn('test');"
+      ],
+      invalid: [
+        {
+          code: "console.log('test');",
+          errors: [{ message: "Unexpected console statement." }]
+        }
+      ]
+    });
+    ```
+  </Tab>
+  <Tab title="With Message IDs">
+    ```javascript
+    const { RuleTester } = require("eslint");
+    const rule = require("../rules/prefer-const");
+
+    const ruleTester = new RuleTester();
+
+    ruleTester.run("prefer-const", rule, {
+      valid: [
+        "const x = 1;",
+        "let x = 1; x = 2;"
+      ],
+      invalid: [
+        {
+          code: "let x = 1;",
+          output: "const x = 1;",
+          errors: [
+            {
+              messageId: "useConst",
+              data: { name: "x" },
+              line: 1,
+              column: 5
+            }
+          ]
+        }
+      ]
+    });
+    ```
+  </Tab>
+  <Tab title="With Options">
+    ```javascript
+    const { RuleTester } = require("eslint");
+    const rule = require("../rules/quotes");
+
+    const ruleTester = new RuleTester();
+
+    ruleTester.run("quotes", rule, {
+      valid: [
+        {
+          code: "var x = 'test';",
+          options: ["single"]
+        },
+        {
+          code: 'var x = "test";',
+          options: ["double"]
+        }
+      ],
+      invalid: [
+        {
+          code: 'var x = "test";',
+          output: "var x = 'test';",
+          options: ["single"],
+          errors: [
+            {
+              message: "Strings must use singlequote.",
+              line: 1
+            }
+          ]
+        }
+      ]
+    });
+    ```
+  </Tab>
+  <Tab title="With Suggestions">
+    ```javascript
+    const { RuleTester } = require("eslint");
+    const rule = require("../rules/no-unused-vars");
+
+    const ruleTester = new RuleTester();
+
+    ruleTester.run("no-unused-vars", rule, {
+      valid: [
+        "var x = 1; console.log(x);"
+      ],
+      invalid: [
+        {
+          code: "var x = 1;",
+          errors: [
+            {
+              messageId: "unusedVar",
+              data: { name: "x" },
+              suggestions: [
+                {
+                  messageId: "removeVar",
+                  output: ""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+    ```
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+### Use Named Test Cases
+
+Add a `name` property to test cases for better test output:
+
+```javascript
+ruleTester.run("my-rule", rule, {
+  valid: [
+    {
+      name: "allows const declarations",
+      code: "const x = 1;"
+    }
+  ],
+  invalid: [
+    {
+      name: "reports var declarations",
+      code: "var x = 1;",
+      errors: [{ messageId: "useConst" }]
+    }
+  ]
+});
+```
+
+### Test All Error Properties
+
+Verify message IDs, data, and locations:
+
+```javascript
+{
+  code: "var x = 1;",
+  errors: [
+    {
+      messageId: "useConst",
+      data: { name: "x" },
+      line: 1,
+      column: 5,
+      endLine: 1,
+      endColumn: 6
+    }
+  ]
+}
+```
+
+### Test Autofixes
+
+Always specify the expected `output` for fixable rules:
+
+```javascript
+{
+  code: "var x = 1;",
+  output: "const x = 1;",
+  errors: [{ messageId: "useConst" }]
+}
+```
+
+### Use Null for No Autofix
+
+Set `output: null` to assert the rule doesn't provide a fix:
+
+```javascript
+{
+  code: "var x = 1;",
+  output: null,
+  errors: [{ messageId: "noVar" }]
+}
+```

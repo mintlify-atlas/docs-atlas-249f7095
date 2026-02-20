@@ -1,0 +1,71 @@
+---
+title: Rules Reference
+description: Complete guide to ESLint rules
+---
+
+# ESLint Rules
+
+ESLint rules are the core of the linter - they analyze your code and report problems. Each rule is independent and can be configured individually.
+
+## Rule Types
+
+Rules are categorized by their purpose:
+
+- **Problem Rules**: These rules identify code that will cause errors or unexpected behavior
+- **Suggestion Rules**: These rules suggest alternate ways of doing things
+- **Layout Rules**: These rules care about how the code looks rather than how it executes
+
+## Using Rules
+
+Configure rules in your ESLint configuration file:
+
+```js
+module.exports = {
+  rules: {
+    'semi': ['error', 'always'],
+    'quotes': ['error', 'single'],
+    'no-unused-vars': 'warn'
+  }
+};
+```
+
+## Rule Severity
+
+Each rule can be set to one of three severity levels:
+
+- `"off"` or `0` - turn the rule off
+- `"warn"` or `1` - turn the rule on as a warning (doesn't affect exit code)
+- `"error"` or `2` - turn the rule on as an error (exit code will be 1)
+
+## Browse Rules by Category
+
+View rules organized by their purpose:
+
+- [Problem Rules](/rules/categories#problem-rules) - Prevent errors and bugs
+- [Suggestion Rules](/rules/categories#suggestion-rules) - Code improvements
+- [Layout Rules](/rules/categories#layout-rules) - Code formatting
+
+## Search Rules
+
+Use the search below to find specific rules:
+
+<Note>
+You can search by rule name, category, or keywords related to what the rule checks.
+</Note>
+
+## Popular Rules
+
+### Problem Detection
+- [array-callback-return](/rules/array-callback-return) - Enforce return statements in array callbacks
+- [no-await-in-loop](/rules/no-await-in-loop) - Disallow await inside loops
+- [no-constant-binary-expression](/rules/no-constant-binary-expression) - Disallow expressions that always evaluate to the same value
+
+### Best Practices
+- [eqeqeq](/rules/eqeqeq) - Require === and !==
+- [no-eval](/rules/no-eval) - Disallow eval()
+- [curly](/rules/curly) - Enforce consistent brace style
+
+### Code Style
+- [semi](/rules/semi) - Enforce semicolons
+- [quotes](/rules/quotes) - Enforce quote style
+- [indent](/rules/indent) - Enforce consistent indentation

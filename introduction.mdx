@@ -1,0 +1,169 @@
+---
+title: ESLint - Pluggable JavaScript Linter
+description: ESLint is a powerful, pluggable linting tool that helps you identify and fix problems in your JavaScript code using an AST-based approach.
+---
+
+<img src="https://eslint.org/assets/images/logo/eslint-logo-color.svg" alt="ESLint" style={{ maxWidth: '200px', marginBottom: '2rem' }} />
+
+# ESLint - Pluggable JavaScript Linter
+
+ESLint is a tool for identifying and reporting on patterns found in ECMAScript/JavaScript code. In many ways, it is similar to JSLint and JSHint with a few key differences that make it the most popular JavaScript linter today.
+
+## What Makes ESLint Different
+
+<CardGroup cols={3}>
+  <Card title="AST-Based Analysis" icon="sitemap">
+    ESLint uses an Abstract Syntax Tree (AST) to evaluate patterns in code, providing deep and accurate analysis of your JavaScript.
+  </Card>
+  
+  <Card title="Espree Parser" icon="code">
+    Built on the Espree JavaScript parser, ESLint has full support for ECMAScript 3, 5, and every year from 2015 up to the latest stage 4 specifications.
+  </Card>
+  
+  <Card title="Completely Pluggable" icon="puzzle-piece">
+    Every single rule is a plugin. You can add custom rules at runtime, create your own plugins, and extend ESLint to match your exact needs.
+  </Card>
+</CardGroup>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Auto-Fix Problems" icon="wrench">
+    Many errors can be automatically fixed with the `--fix` flag, saving you time and ensuring consistent code style across your project.
+  </Card>
+  
+  <Card title="Customizable Rules" icon="sliders">
+    Configure each rule independently with three severity levels: `off`, `warn`, or `error`. Fine-tune ESLint to your team's preferences.
+  </Card>
+  
+  <Card title="JSX & TypeScript" icon="react">
+    Native JSX parsing support and extensive TypeScript compatibility through parser plugins like `@typescript-eslint/parser`.
+  </Card>
+  
+  <Card title="Modern Config System" icon="gear">
+    Use the new flat config format with `eslint.config.js` for a more intuitive and powerful configuration experience.
+  </Card>
+</CardGroup>
+
+## Quick Stats
+
+- **Version**: 10.0.1
+- **Node.js Support**: `^20.19.0`, `^22.13.0`, or `>=24`
+- **License**: MIT
+- **Maintained By**: OpenJS Foundation
+
+<Note>
+  ESLint requires Node.js built with SSL support. If you're using an official Node.js distribution, SSL is always built in.
+</Note>
+
+## Get Started
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get up and running with ESLint in under 5 minutes
+  </Card>
+  
+  <Card title="Installation" icon="download" href="/installation">
+    Detailed installation instructions for all package managers
+  </Card>
+  
+  <Card title="Configuration" icon="file-code" href="https://eslint.org/docs/latest/use/configure">
+    Learn how to configure ESLint for your project
+  </Card>
+  
+  <Card title="Rules Reference" icon="book" href="https://eslint.org/docs/rules/">
+    Browse the complete list of ESLint rules
+  </Card>
+</CardGroup>
+
+## Recommended Rules
+
+ESLint comes with a carefully curated set of recommended rules that catch common errors:
+
+<CodeGroup>
+```js eslint.config.js
+import { defineConfig } from "eslint/config";
+import js from "@eslint/js";
+
+export default defineConfig([
+  js.configs.recommended,
+  {
+    files: ["**/*.js", "**/*.cjs", "**/*.mjs"],
+    rules: {
+      "prefer-const": "warn",
+      "no-constant-binary-expression": "error",
+    },
+  },
+]);
+```
+
+```js CJS (eslint.config.cjs)
+const { defineConfig } = require("eslint/config");
+const js = require("@eslint/js");
+
+module.exports = defineConfig([
+  js.configs.recommended,
+  {
+    files: ["**/*.js", "**/*.cjs", "**/*.mjs"],
+    rules: {
+      "prefer-const": "warn",
+      "no-constant-binary-expression": "error",
+    },
+  },
+]);
+```
+</CodeGroup>
+
+<Tip>
+  The `@eslint/js` recommended configuration includes 74 rules that catch common programming errors like `no-unused-vars`, `no-undef`, `no-unreachable`, and many more.
+</Tip>
+
+## Rule Severity Levels
+
+ESLint offers three severity levels for each rule:
+
+| Level | Numeric | Description |
+|-------|---------|-------------|
+| `"off"` | `0` | Turn the rule off completely |
+| `"warn"` | `1` | Turn the rule on as a warning (doesn't affect exit code) |
+| `"error"` | `2` | Turn the rule on as an error (exit code will be 1) |
+
+```js
+export default defineConfig([
+  {
+    rules: {
+      "no-unused-vars": "error",      // Exit with error
+      "no-console": "warn",           // Show warning
+      "no-debugger": "off",           // Ignore completely
+    },
+  },
+]);
+```
+
+## Version Support
+
+The ESLint team provides:
+
+- **Ongoing support** for the current version
+- **6 months of limited support** for the previous version (critical bugs, security issues, and compatibility issues only)
+- **Commercial support** through partners [Tidelift](https://tidelift.com/funding/github/npm/eslint) and [HeroDevs](https://www.herodevs.com/support/eslint-nes)
+
+## Community & Support
+
+<CardGroup cols={3}>
+  <Card title="Discord" icon="discord" href="https://eslint.org/chat">
+    Join the community chat
+  </Card>
+  
+  <Card title="GitHub Discussions" icon="github" href="https://github.com/eslint/eslint/discussions">
+    Ask questions and share ideas
+  </Card>
+  
+  <Card title="Report Bugs" icon="bug" href="https://eslint.org/docs/latest/contribute/report-bugs">
+    Help improve ESLint
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+Ready to start using ESLint? Follow our [Quick Start Guide](/quickstart) to get linting in under 5 minutes, or dive into the [detailed installation instructions](/installation) to learn about all the available options.

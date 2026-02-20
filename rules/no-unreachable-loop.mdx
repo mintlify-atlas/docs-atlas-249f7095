@@ -1,0 +1,314 @@
+---
+title: no-unreachable-loop
+description: Disallow loops with a body that allows only one iteration
+---
+
+# no-unreachable-loop
+
+A loop that can never reach its second iteration is usually a mistake. If you only need one iteration, use an `if` statement instead.
+
+<Note>
+**Rule Type:** Problem  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+Loops are meant to execute multiple times. If a loop always exits on the first iteration (via `break`, `return`, or `throw`), it should be refactored to use `if` statements instead.
+
+```js
+// This loop can only run once
+for (let i = 0; i < arr.length; i++) {
+    if (arr[i].name === myName) {
+        doSomething(arr[i]);
+        // break was supposed to be here!
+    }
+    break; // Always exits after first iteration
+}
+```
+
+## Rule Details
+
+This rule detects loops where all code paths exit the loop in the first iteration via:
+- `break` statement
+- `return` statement
+- `throw` statement
+
+It checks these loop types:
+- `while` loops
+- `do-while` loops
+- `for` loops
+- `for-in` loops
+- `for-of` loops
+
+## Examples
+
+### Incorrect Code
+
+```js
+// Unconditional break
+while (foo) {
+    doSomething(foo);
+    foo = foo.parent;
+    break; // Always exits after first iteration
+}
+
+// All branches return
+function verifyList(head) {
+    let item = head;
+    do {
+        if (verify(item)) {
+            return true;
+        } else {
+            return false; // No matter what, we return
+        }
+    } while (item);
+}
+
+// All branches throw or return
+function findSomething(arr) {
+    for (let i = 0; i < arr.length; i++) {
+        if (isSomething(arr[i])) {
+            return arr[i];
+        } else {
+            throw new Error("Doesn't exist."); // Every path exits
+        }
+    }
+}
+
+// Break in all paths
+for (const key in obj) {
+    if (key.startsWith("_")) {
+        break;
+    }
+    firstKey = key;
+    firstValue = obj[key];
+    break; // Break either way
+}
+
+// Immediate break
+for (const foo of bar) {
+    if (foo.id === id) {
+        doSomething(foo);
+    }
+    break; // Always break immediately
+}
+```
+
+### Correct Code
+
+```js
+// Loop that can actually iterate
+while (foo) {
+    doSomething(foo);
+    foo = foo.parent; // No break - can continue
+}
+
+// Conditional return allows iteration
+function verifyList(head) {
+    let item = head;
+    do {
+        if (verify(item)) {
+            item = item.next; // Continue to next item
+        } else {
+            return false; // Only exit on failure
+        }
+    } while (item);
+    return true;
+}
+
+// Only returns when found
+function findSomething(arr) {
+    for (let i = 0; i < arr.length; i++) {
+        if (isSomething(arr[i])) {
+            return arr[i]; // Exit when found
+        }
+        // Keep looking
+    }
+    throw new Error("Doesn't exist."); // After checking all
+}
+
+// Continue instead of break
+for (const key in obj) {
+    if (key.startsWith("_")) {
+        continue; // Skip this one, try next
+    }
+    firstKey = key;
+    firstValue = obj[key];
+    break; // Break after finding first valid key
+}
+
+// Conditional break
+for (const foo of bar) {
+    if (foo.id === id) {
+        doSomething(foo);
+        break; // Only break when found
+    }
+}
+```
+
+## Common Refactorings
+
+### Replace Loop with If Statement
+
+```js
+// Before: Loop that runs once
+for (const item of items) {
+    if (item.isValid) {
+        process(item);
+        return true;
+    }
+    return false;
+}
+
+// After: Just use if
+const item = items[0];
+if (item && item.isValid) {
+    process(item);
+    return true;
+}
+return false;
+```
+
+### Use Array Methods
+
+```js
+// Before: Loop that finds first match
+for (const item of items) {
+    if (item.id === targetId) {
+        return item;
+    }
+    break; // Bug: should check all items
+}
+
+// After: Use find()
+return items.find(item => item.id === targetId);
+```
+
+### Fix the Break Statement
+
+```js
+// Before: Misplaced break
+for (let i = 0; i < arr.length; i++) {
+    if (arr[i] === target) {
+        found = true;
+        // break should be here!
+    }
+    break; // Wrong: exits immediately
+}
+
+// After: Break in right place
+for (let i = 0; i < arr.length; i++) {
+    if (arr[i] === target) {
+        found = true;
+        break; // Exit when found
+    }
+}
+```
+
+### Replace Break with Continue
+
+```js
+// Before: Breaks after skipping one item
+for (const item of items) {
+    if (item.skip) {
+        break; // Bug: should continue, not break
+    }
+    process(item);
+}
+
+// After: Continue to next item
+for (const item of items) {
+    if (item.skip) {
+        continue; // Skip this one, check others
+    }
+    process(item);
+}
+```
+
+## Options
+
+### `ignore`
+
+**Type:** `Array<string>`
+
+Specify loop types to ignore. Possible values:
+
+- `"WhileStatement"` - ignore `while` loops
+- `"DoWhileStatement"` - ignore `do-while` loops  
+- `"ForStatement"` - ignore `for` loops
+- `"ForInStatement"` - ignore `for-in` loops
+- `"ForOfStatement"` - ignore `for-of` loops
+
+```js
+// Ignore for-in and for-of loops
+{
+  "rules": {
+    "no-unreachable-loop": ["error", { 
+      "ignore": ["ForInStatement", "ForOfStatement"] 
+    }]
+  }
+}
+```
+
+**Example:** Sometimes you intentionally want to check only the first property:
+
+```js
+/* eslint no-unreachable-loop: ["error", { "ignore": ["ForInStatement"] }] */
+
+// Intentionally check only first property
+for (const key in obj) {
+  hasEnumerableProperties = true;
+  break; // OK with ignore option
+}
+```
+
+## Known Limitations
+
+<Warning>
+This rule uses static code path analysis and doesn't evaluate conditions.
+</Warning>
+
+The rule may miss obvious cases:
+
+```js
+// This is technically always unreachable, but rule doesn't evaluate `true`
+for (let i = 0; i < 10; i++) {
+    doSomething(i);
+    if (true) { // Static analysis doesn't know this is always true
+        break;
+    }
+}
+```
+
+## When Not to Use It
+
+This rule helps catch bugs, but you might disable it if:
+
+1. Your codebase uses loops for single-iteration patterns intentionally
+2. You're using a framework that expects loop syntax for single operations
+
+In most cases, refactoring to `if` statements will make code clearer.
+
+## Intentional Single Iteration
+
+If you really need a loop that runs once:
+
+```js
+/* eslint-disable no-unreachable-loop */
+for (const key in obj) {
+    firstKey = key;
+    break; // Intentional: just get first key
+}
+/* eslint-enable no-unreachable-loop */
+
+// But this is clearer:
+const firstKey = Object.keys(obj)[0];
+```
+
+## Related Rules
+
+- [no-unreachable](/rules/no-unreachable)
+- [no-constant-condition](/rules/no-constant-condition)
+- [no-unmodified-loop-condition](/rules/no-unmodified-loop-condition)
+- [for-direction](/rules/for-direction)

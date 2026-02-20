@@ -1,0 +1,358 @@
+---
+title: Linter Class
+description: Low-level API for verifying code with explicit configuration
+---
+
+The `Linter` class is a low-level API for verifying JavaScript code. Unlike the `ESLint` class, `Linter` does not handle file I/O or configuration file loading. It works directly with code strings and configuration objects.
+
+## Constructor
+
+```javascript
+const { Linter } = require("eslint");
+const linter = new Linter(options);
+```
+
+<ParamField path="options" type="object">
+  Configuration options for the Linter instance.
+
+  <Expandable title="properties">
+    <ParamField path="cwd" type="string">
+      Path to a directory that should be considered as the current working directory. Defaults to `process.cwd()`.
+    </ParamField>
+
+    <ParamField path="flags" type="string[]">
+      Array of feature flags to enable.
+    </ParamField>
+
+    <ParamField path="configType" type="'flat'" default="flat">
+      The type of config used. Must be `"flat"`. Retained for backwards compatibility.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Static Properties
+
+### Linter.version
+
+```javascript
+const version = Linter.version;
+```
+
+<ResponseField name="version" type="string">
+  The ESLint version string.
+</ResponseField>
+
+## Instance Methods
+
+### verify()
+
+Verifies text against the specified rules.
+
+```javascript
+const messages = linter.verify(textOrSourceCode, config, filenameOrOptions);
+```
+
+<ParamField path="textOrSourceCode" type="string | SourceCode" required>
+  The JavaScript code to verify, or a SourceCode object.
+</ParamField>
+
+<ParamField path="config" type="Config | Config[]" required>
+  The configuration object or array of configuration objects.
+</ParamField>
+
+<ParamField path="filenameOrOptions" type="string | object">
+  The filename or options object.
+
+  <Expandable title="options properties">
+    <ParamField path="filename" type="string" default="<input>">
+      The filename of the source code.
+    </ParamField>
+
+    <ParamField path="allowInlineConfig" type="boolean" default="true">
+      Allow/disallow inline comments' ability to change config.
+    </ParamField>
+
+    <ParamField path="disableFixes" type="boolean" default="false">
+      If true, the linter doesn't make `fix` properties in the result.
+    </ParamField>
+
+    <ParamField path="reportUnusedDisableDirectives" type="boolean | 'off' | 'warn' | 'error'">
+      Adds reported errors for unused `eslint-disable` directives.
+    </ParamField>
+
+    <ParamField path="ruleFilter" type="function">
+      A predicate function that determines whether a given rule should run.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="messages" type="LintMessage[]">
+  Array of lint messages.
+
+  <Expandable title="LintMessage properties">
+    <ResponseField name="ruleId" type="string | null">
+      The rule ID that generated this message.
+    </ResponseField>
+
+    <ResponseField name="severity" type="number">
+      The severity of the message: 1 for warning, 2 for error.
+    </ResponseField>
+
+    <ResponseField name="message" type="string">
+      The error message.
+    </ResponseField>
+
+    <ResponseField name="line" type="number">
+      The 1-based line number where the issue occurs.
+    </ResponseField>
+
+    <ResponseField name="column" type="number">
+      The 1-based column number where the issue occurs.
+    </ResponseField>
+
+    <ResponseField name="endLine" type="number" optional>
+      The 1-based line number where the issue ends.
+    </ResponseField>
+
+    <ResponseField name="endColumn" type="number" optional>
+      The 1-based column number where the issue ends.
+    </ResponseField>
+
+    <ResponseField name="fix" type="object" optional>
+      The fix object if the rule provides a fix.
+    </ResponseField>
+
+    <ResponseField name="suggestions" type="object[]" optional>
+      Array of suggestion objects if the rule provides suggestions.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### verifyAndFix()
+
+Performs multiple autofix passes over the text.
+
+```javascript
+const result = linter.verifyAndFix(text, config, filenameOrOptions);
+```
+
+<ParamField path="text" type="string" required>
+  The source text to apply fixes to.
+</ParamField>
+
+<ParamField path="config" type="Config | Config[]" required>
+  The ESLint config object or array.
+</ParamField>
+
+<ParamField path="filenameOrOptions" type="string | object">
+  The filename or options object.
+
+  <Expandable title="options properties">
+    <ParamField path="filename" type="string">
+      The filename of the source code.
+    </ParamField>
+
+    <ParamField path="fix" type="boolean | function" default="true">
+      Whether fixes should be applied. Can be a predicate function.
+    </ParamField>
+
+    <ParamField path="allowInlineConfig" type="boolean">
+      Allow/disallow inline config.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="result" type="object">
+  <Expandable title="properties">
+    <ResponseField name="fixed" type="boolean">
+      Whether any fixes were applied.
+    </ResponseField>
+
+    <ResponseField name="messages" type="LintMessage[]">
+      Array of remaining lint messages.
+    </ResponseField>
+
+    <ResponseField name="output" type="string">
+      The fixed code text.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### getSourceCode()
+
+Gets the SourceCode object from the last verification.
+
+```javascript
+const sourceCode = linter.getSourceCode();
+```
+
+<ResponseField name="sourceCode" type="SourceCode | null">
+  The SourceCode object from the last `verify()` call, or null.
+</ResponseField>
+
+### getSuppressedMessages()
+
+Gets suppressed messages from the last verification.
+
+```javascript
+const suppressedMessages = linter.getSuppressedMessages();
+```
+
+<ResponseField name="suppressedMessages" type="SuppressedLintMessage[]">
+  Array of messages that were suppressed by directives.
+</ResponseField>
+
+### getTimes()
+
+Gets timing information from the last verification (when stats are enabled).
+
+```javascript
+const times = linter.getTimes();
+```
+
+<ResponseField name="times" type="object">
+  <Expandable title="properties">
+    <ResponseField name="passes" type="TimePass[]">
+      Array of timing information for each pass.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### getFixPassCount()
+
+Gets the number of autofix passes made in the last run.
+
+```javascript
+const count = linter.getFixPassCount();
+```
+
+<ResponseField name="count" type="number">
+  The number of autofix passes.
+</ResponseField>
+
+### hasFlag()
+
+Checks if a feature flag is enabled.
+
+```javascript
+const enabled = linter.hasFlag(flag);
+```
+
+<ParamField path="flag" type="string" required>
+  The feature flag name to check.
+</ParamField>
+
+<ResponseField name="enabled" type="boolean">
+  `true` if the flag is enabled, `false` otherwise.
+</ResponseField>
+
+## Examples
+
+<Tabs>
+  <Tab title="Basic Verification">
+    ```javascript
+    const { Linter } = require("eslint");
+
+    const linter = new Linter();
+
+    const code = "var foo = 'bar';";
+    const config = {
+      rules: {
+        "no-var": "error",
+        "quotes": ["error", "double"]
+      }
+    };
+
+    const messages = linter.verify(code, config);
+    console.log(messages);
+    // [
+    //   {
+    //     ruleId: 'no-var',
+    //     severity: 2,
+    //     message: 'Unexpected var, use let or const instead.',
+    //     line: 1,
+    //     column: 1,
+    //     ...
+    //   },
+    //   ...
+    // ]
+    ```
+  </Tab>
+  <Tab title="Auto-fixing">
+    ```javascript
+    const { Linter } = require("eslint");
+
+    const linter = new Linter();
+
+    const code = "var foo = 'bar';";
+    const config = {
+      rules: {
+        "quotes": ["error", "double"]
+      }
+    };
+
+    const result = linter.verifyAndFix(code, config);
+    console.log(result);
+    // {
+    //   fixed: true,
+    //   output: 'var foo = "bar";',
+    //   messages: []
+    // }
+    ```
+  </Tab>
+  <Tab title="With Filename">
+    ```javascript
+    const { Linter } = require("eslint");
+
+    const linter = new Linter();
+
+    const code = "console.log('test');";
+    const config = {
+      rules: {
+        "no-console": "error"
+      }
+    };
+
+    const messages = linter.verify(code, config, {
+      filename: "test.js",
+      allowInlineConfig: false
+    });
+
+    console.log(messages);
+    ```
+  </Tab>
+  <Tab title="Custom CWD">
+    ```javascript
+    const { Linter } = require("eslint");
+    const path = require("path");
+
+    const linter = new Linter({
+      cwd: path.join(__dirname, "src")
+    });
+
+    const code = "var x = 1;";
+    const config = {
+      rules: { "no-var": "error" }
+    };
+
+    const messages = linter.verify(code, config);
+    console.log(messages);
+    ```
+  </Tab>
+</Tabs>
+
+## Differences from ESLint Class
+
+The `Linter` class differs from the `ESLint` class in several ways:
+
+| Feature | Linter | ESLint |
+|---------|--------|--------|
+| File I/O | No | Yes |
+| Config file loading | No | Yes |
+| Caching | No | Yes |
+| Formatters | No | Yes |
+| Glob patterns | No | Yes |
+| Synchronous API | Yes | No |
+| Use case | Low-level, in-memory linting | Full linting workflow |
+
+Use `Linter` when you need fine-grained control and already have the code and configuration in memory. Use `ESLint` for a complete linting workflow with file handling.

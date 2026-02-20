@@ -1,0 +1,591 @@
+---
+title: Version Support Policy
+description: Understanding ESLint's version support policy, release schedule, Node.js compatibility, and commercial support options
+---
+
+# Version Support Policy
+
+Understand ESLint's versioning strategy, support timeline, and what to expect from each release.
+
+<Info>
+ESLint follows [Semantic Versioning](https://semver.org) with scheduled releases every two weeks.
+</Info>
+
+---
+
+## Current Support Status
+
+### Active Versions
+
+| Version | Status | Release Date | End of Support | Node.js Support |
+|---------|--------|--------------|----------------|------------------|
+| **v10.x** | ✅ Current | Feb 6, 2026 | TBD | `^20.19.0 \|\| ^22.13.0 \|\| >=24` |
+| **v9.x** | 🔄 Limited | Oct 2025 | Aug 2026 (estimated) | `^18.18.0 \|\| ^20.9.0 \|\| >=21.1.0` |
+| **v8.x** | ❌ End of Life | Oct 2023 | Apr 2025 | `^12.22.0 \|\| ^14.17.0 \|\| >=16.0.0` |
+
+<Warning>
+ESLint v8 reached end of life in April 2025. Projects still on v8 should upgrade to v10 as soon as possible.
+</Warning>
+
+---
+
+## Support Tiers
+
+### Current Version (Full Support)
+
+<Info>
+**v10.x** receives full support with active development.
+</Info>
+
+**Includes:**
+- 🐛 Bug fixes (all severity levels)
+- 🔒 Security patches
+- ✨ New features
+- 📝 Documentation updates
+- 🔧 Configuration improvements
+- ⚡ Performance optimizations
+
+**Timeline:** Ongoing until next major release
+
+---
+
+### Previous Version (Limited Support)
+
+<Info>
+**v9.x** receives limited support for 6 months after v10 release.
+</Info>
+
+**Includes:**
+- 🐛 Critical bug fixes only
+- 🔒 Security issues
+- 🔌 Compatibility fixes
+
+**Excludes:**
+- ❌ New features
+- ❌ Minor bug fixes
+- ❌ Performance improvements
+- ❌ Documentation updates
+
+**Timeline:** Feb 2026 - Aug 2026 (approximately)
+
+---
+
+### End of Life (No Support)
+
+<Warning>
+**v8.x and older** receive no support.
+</Warning>
+
+**No updates for:**
+- ❌ Bugs (any severity)
+- ❌ Security vulnerabilities
+- ❌ Compatibility issues
+
+**Recommendation:** Upgrade to v10 immediately.
+
+---
+
+## Commercial Support
+
+Extended support is available through ESLint's commercial partners:
+
+<CardGroup cols={2}>
+  <Card title="Tidelift" icon="briefcase" href="https://tidelift.com/funding/github/npm/eslint">
+    **Extended Support for v9.x**
+    
+    - Security updates beyond 6 months
+    - Legal guarantees and indemnification
+    - Maintenance and licensing assurance
+    - Access to the maintainers
+  </Card>
+  
+  <Card title="HeroDevs" icon="shield" href="https://www.herodevs.com/support/eslint-nes">
+    **Never-Ending Support (NES)**
+    
+    - Support for legacy versions (v8.x and earlier)
+    - Security patches indefinitely
+    - Critical bug fixes
+    - Priority support channels
+  </Card>
+</CardGroup>
+
+<Tip>
+Commercial support is ideal for enterprise teams that cannot upgrade immediately due to large codebases or strict compliance requirements.
+</Tip>
+
+---
+
+## Release Schedule
+
+### Regular Releases
+
+<Info>
+ESLint follows a predictable release schedule:
+
+- **Frequency:** Every 2 weeks (Friday or Saturday)
+- **Type:** Minor and patch releases
+- **Tracking:** Follow [release issues](https://github.com/eslint/eslint/issues?q=is%3Aopen+is%3Aissue+label%3Arelease) on GitHub
+</Info>
+
+**Typical release timeline:**
+```
+Week 1-2: Development
+  ↓
+Friday/Saturday: Release
+  ↓
+Monday: Post-release monitoring
+  ↓
+Repeat
+```
+
+---
+
+### Major Releases
+
+**Major versions** (e.g., v9 → v10) are released approximately **once per year**.
+
+<Steps>
+  <Step title="Alpha Release">
+    Early testing release with breaking changes.
+    
+    - 3-4 months before stable
+    - Breaking changes introduced
+    - Community feedback encouraged
+  </Step>
+  
+  <Step title="Beta Release">
+    Feature-complete pre-release.
+    
+    - 2-3 months before stable
+    - API stabilization
+    - Plugin developers can test
+  </Step>
+  
+  <Step title="Release Candidate (RC)">
+    Final testing before stable.
+    
+    - 1-2 months before stable
+    - No new features
+    - Bug fixes only
+  </Step>
+  
+  <Step title="Stable Release">
+    Production-ready release.
+    
+    - Generally available
+    - Full documentation
+    - Migration guides published
+  </Step>
+</Steps>
+
+**Example timeline (v10):**
+- `v10.0.0-alpha.0`: Nov 14, 2025
+- `v10.0.0-beta.0`: Dec 12, 2025
+- `v10.0.0-rc.0`: Jan 9, 2026
+- `v10.0.0`: Feb 6, 2026 ✅
+
+---
+
+## Semantic Versioning
+
+ESLint follows [Semantic Versioning](https://semver.org) with specific interpretations for linting tools.
+
+### Patch Releases (10.0.x)
+
+<Info>
+**Intended to not break your lint build.**
+</Info>
+
+**Includes:**
+- 🐛 Bug fixes that report **fewer** errors
+- 📝 Documentation improvements
+- 🧪 Test improvements
+- ♻️ Non-user-facing refactoring
+
+**Example:**
+```
+v10.0.0 → v10.0.1
+  - Fixed false positive in no-unused-vars
+  - Updated documentation
+```
+
+---
+
+### Minor Releases (10.x.0)
+
+<Warning>
+**Might break your lint build.**
+</Warning>
+
+**Includes:**
+- 🐛 Bug fixes that report **more** errors
+- ✨ New rules (disabled by default)
+- 🔧 New rule options (non-breaking defaults)
+- 🎯 New CLI capabilities
+- 📦 New public API methods
+- ⚠️ Rule deprecations
+- 📉 `eslint:recommended` updates (fewer errors only)
+
+**Example:**
+```
+v10.0.0 → v10.1.0
+  - Added new rule: no-new-array-constructor
+  - Fixed bug in no-console (reports more cases)
+  - Added --output-format option to CLI
+```
+
+<Tip>
+Use `~10.0.0` in `package.json` to accept only patch updates:
+
+```json
+{
+  "devDependencies": {
+    "eslint": "~10.0.0"
+  }
+}
+```
+</Tip>
+
+---
+
+### Major Releases (x.0.0)
+
+<Warning>
+**Likely to break your lint build.**
+</Warning>
+
+**Includes:**
+- 💥 Breaking changes to public API
+- 🔄 `eslint:recommended` updates (may report more errors)
+- 🔧 Rule option changes with breaking defaults
+- 🗑️ Removal of deprecated features
+- 📋 Removal of formatters
+- 🏗️ Configuration schema changes
+- 🔌 Changes to plugin/parser APIs
+
+**Example:**
+```
+v9.39.0 → v10.0.0 (Breaking Changes)
+  - Removed eslintrc support
+  - Removed deprecated context methods
+  - Updated eslint:recommended (3 new rules)
+  - Dropped Node.js < v20.19 support
+  - Changed config file lookup behavior
+```
+
+---
+
+## Node.js Compatibility
+
+### Version Support Matrix
+
+<Info>
+ESLint updates Node.js requirements with each major release.
+</Info>
+
+| ESLint Version | Node.js Support | Notes |
+|----------------|-----------------|-------|
+| v10.x | `^20.19.0 \|\| ^22.13.0 \|\| >=24` | Current |
+| v9.x | `^18.18.0 \|\| ^20.9.0 \|\| >=21.1.0` | Limited support |
+| v8.x | `^12.22.0 \|\| ^14.17.0 \|\| >=16.0.0` | End of life |
+
+---
+
+### Node.js Selection Criteria
+
+When releasing a new major version, ESLint supports:
+
+<Steps>
+  <Step title="Most Recent Maintenance Release">
+    Latest stable Node.js version at time of release.
+    
+    Example: Node.js v24.x for ESLint v10
+  </Step>
+  
+  <Step title="Current LTS Release">
+    The lowest minor version of Node.js LTS that includes features ESLint needs.
+    
+    Example: Node.js v22.13.0 for ESLint v10
+  </Step>
+  
+  <Step title="Previous LTS Release">
+    The previous LTS version for compatibility.
+    
+    Example: Node.js v20.19.0 for ESLint v10
+  </Step>
+</Steps>
+
+<Warning>
+**Important:** Your editor's Node.js version must also be compatible. Check your editor's ESLint integration settings.
+</Warning>
+
+---
+
+## Deprecation Policy
+
+### Deprecation Timeline
+
+<Steps>
+  <Step title="Announcement">
+    Feature marked as deprecated in documentation and changelog.
+    
+    - Runtime warnings added
+    - Migration guide published
+    - Alternative solutions documented
+  </Step>
+  
+  <Step title="Grace Period">
+    Feature continues to work for at least one major version.
+    
+    - Minimum 6 months of support
+    - Deprecation warnings in console
+    - Documentation updated
+  </Step>
+  
+  <Step title="Removal">
+    Feature removed in next major version.
+    
+    - Breaking change in changelog
+    - Migration guide emphasized
+    - Related documentation archived
+  </Step>
+</Steps>
+
+**Example: `context.getFilename()` deprecation:**
+
+```
+v9.0.0: Deprecated (warnings added)
+  ↓ 6+ months
+v10.0.0: Removed (breaking change)
+```
+
+---
+
+## Upgrade Recommendations
+
+### When to Upgrade
+
+<AccordionGroup>
+  <Accordion title="Immediately upgrade if...">
+    - ⚠️ You're on v8.x or earlier (end of life)
+    - 🔒 A security vulnerability affects your version
+    - 🐛 A critical bug blocks your workflow
+    - 🆕 You need a new feature only available in latest
+  </Accordion>
+  
+  <Accordion title="Upgrade within 1 month if...">
+    - 📦 You're on the previous major version (v9.x)
+    - 🔄 Your Node.js version is becoming unsupported
+    - 📈 Performance improvements are significant
+    - 🧪 You want to test new features early
+  </Accordion>
+  
+  <Accordion title="Upgrade at your convenience if...">
+    - ✅ You're on the current major version (v10.x)
+    - 🔧 Minor/patch releases are available
+    - 📚 Documentation improvements are published
+    - 🎨 New non-critical rules are added
+  </Accordion>
+</AccordionGroup>
+
+---
+
+### Upgrade Strategy
+
+<Steps>
+  <Step title="Test in Development">
+    ```bash
+    # Create feature branch
+    git checkout -b upgrade-eslint-v10
+    
+    # Update ESLint
+    npm install eslint@latest --save-dev
+    
+    # Test locally
+    npm run lint
+    ```
+  </Step>
+  
+  <Step title="Review Changes">
+    Read the [migration guide](/guides/migrate-to-10) and CHANGELOG:
+    
+    - Identify breaking changes
+    - Plan configuration updates
+    - Update custom rules/plugins
+  </Step>
+  
+  <Step title="Update Configuration">
+    Make necessary config changes:
+    
+    ```javascript
+    // Update deprecated APIs
+    // Remove obsolete flags
+    // Adjust rule configurations
+    ```
+  </Step>
+  
+  <Step title="Test in CI">
+    ```yaml
+    # Test in CI before merging
+    - run: npm ci
+    - run: npm run lint
+    - run: npm test
+    ```
+  </Step>
+  
+  <Step title="Deploy Gradually">
+    - Merge to main branch
+    - Monitor for issues
+    - Notify team of changes
+  </Step>
+</Steps>
+
+---
+
+## Security Policy
+
+<Info>
+ESLint takes security seriously and addresses vulnerabilities quickly.
+</Info>
+
+### Reporting Vulnerabilities
+
+<Warning>
+**Do not report security issues in public GitHub issues.**
+</Warning>
+
+Report security vulnerabilities via:
+- GitHub Security Advisories
+- Email to security team
+- See full policy: [github.com/eslint/.github/blob/master/SECURITY.md](https://github.com/eslint/.github/blob/master/SECURITY.md)
+
+---
+
+### Security Updates
+
+**Timeline:**
+- Critical vulnerabilities: Patched within 48 hours
+- High severity: Patched within 1 week
+- Medium severity: Patched in next scheduled release
+- Low severity: Addressed in regular updates
+
+**Support scope:**
+- ✅ Current version (v10.x): All security issues
+- 🔄 Previous version (v9.x): Critical and high severity only
+- ❌ Older versions (v8.x): No security updates (consider commercial support)
+
+---
+
+## Dependencies Policy
+
+### ESM-Only Dependencies
+
+<Info>
+ESLint (CommonJS) has restrictions on ESM-only dependencies.
+</Info>
+
+**Allowed:**
+- ESM packages controlled by ESLint team with no external dependencies
+- External ESM packages used only in async contexts (via dynamic `import()`)
+
+**Not Allowed:**
+- External ESM packages used synchronously (no `require(esm)` due to potential `top-level await`)
+
+**Rationale:** Prevents breaking ESLint if a dependency adds `top-level await`.
+
+---
+
+## Release Tracking
+
+<CardGroup cols={2}>
+  <Card title="Releases Page" icon="tag" href="https://github.com/eslint/eslint/releases">
+    Official release announcements and changelogs
+  </Card>
+  
+  <Card title="Release Issues" icon="calendar" href="https://github.com/eslint/eslint/issues?q=is%3Aissue+label%3Arelease">
+    Track upcoming releases and their schedules
+  </Card>
+  
+  <Card title="CHANGELOG" icon="clock-rotate-left" href="https://github.com/eslint/eslint/blob/main/CHANGELOG.md">
+    Complete version history with all changes
+  </Card>
+  
+  <Card title="Blog" icon="newspaper" href="https://eslint.org/blog">
+    Release announcements and migration guides
+  </Card>
+</CardGroup>
+
+---
+
+## Frequently Asked Questions
+
+<AccordionGroup>
+  <Accordion title="How long will v9 be supported?">
+    ESLint v9 receives limited support for 6 months after v10 release:
+    
+    - **Full support ended:** February 6, 2026 (v10 release)
+    - **Limited support ends:** Approximately August 2026
+    - **Limited support includes:** Critical bugs, security issues, compatibility fixes only
+    
+    After August 2026, upgrade to v10 or consider [commercial support](https://tidelift.com/funding/github/npm/eslint).
+  </Accordion>
+  
+  <Accordion title="Can I stay on v8?">
+    No, ESLint v8 reached end of life in April 2025:
+    
+    - ❌ No bug fixes
+    - ❌ No security patches
+    - ❌ No compatibility updates
+    
+    Options:
+    1. **Upgrade to v10** (recommended)
+    2. **Commercial support** via [HeroDevs NES](https://www.herodevs.com/support/eslint-nes)
+  </Accordion>
+  
+  <Accordion title="Will my plugins work with v10?">
+    Most plugins are compatible, but check:
+    
+    - Plugin's changelog for v10 support
+    - `peerDependencies` in plugin's `package.json`
+    - GitHub issues for compatibility reports
+    
+    Popular plugins (React, TypeScript, etc.) are already v10-compatible.
+  </Accordion>
+  
+  <Accordion title="What if I find a bug in v10?">
+    Report it on GitHub:
+    
+    1. Search [existing issues](https://github.com/eslint/eslint/issues)
+    2. If not found, [create new issue](https://github.com/eslint/eslint/issues/new/choose)
+    3. Include:
+       - ESLint version
+       - Node.js version
+       - Config file
+       - Minimal reproduction
+  </Accordion>
+  
+  <Accordion title="How often should I update ESLint?">
+    **Best practice:**
+    
+    - **Patch releases:** Update immediately (safe)
+    - **Minor releases:** Update within 1-2 weeks (test first)
+    - **Major releases:** Plan upgrade within 1-2 months
+    
+    Use automated tools like [Renovate](https://renovatebot.com) or [Dependabot](https://github.com/dependabot) to track updates.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Stay Informed
+
+<Tip>
+Follow these channels to stay updated:
+
+- 🐦 Twitter/X: [@geteslint](https://x.com/geteslint)
+- 💬 Discord: [eslint.org/chat](https://eslint.org/chat)
+- 🐘 Mastodon: [@eslint@fosstodon.org](https://fosstodon.org/@eslint)
+- 🦋 Bluesky: [@eslint.org](https://bsky.app/profile/eslint.org)
+- 📰 Blog: [eslint.org/blog](https://eslint.org/blog)
+- 📧 Newsletter: Subscribe on [eslint.org](https://eslint.org)
+</Tip>

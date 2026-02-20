@@ -1,0 +1,812 @@
+---
+title: Creating Plugins
+description: Build and publish ESLint plugins to share rules, processors, configs, and parsers
+---
+
+# Creating Plugins
+
+Plugins are the primary way to extend ESLint with custom functionality. A plugin can bundle rules, processors, parsers, and configurations into a single, reusable package.
+
+## What is a Plugin?
+
+An ESLint plugin is a JavaScript object that exports:
+
+- **Rules** - Custom linting rules
+- **Processors** - Transform non-JavaScript files
+- **Configs** - Shareable configurations
+- **Parsers** - Custom syntax support
+
+<Info>
+**Popular Plugins:**
+- `@typescript-eslint/eslint-plugin` - TypeScript rules
+- `eslint-plugin-react` - React-specific rules
+- `eslint-plugin-vue` - Vue.js support
+- `eslint-plugin-import` - Import/export validation
+</Info>
+
+## Plugin Structure
+
+A plugin is an object with specific properties:
+
+```javascript
+const plugin = {
+  meta: {
+    name: "eslint-plugin-example",
+    version: "1.0.0",
+    namespace: "example"
+  },
+  configs: {},
+  rules: {},
+  processors: {},
+};
+
+// ES Module
+export default plugin;
+
+// CommonJS
+module.exports = plugin;
+```
+
+## Plugin Metadata
+
+Provide metadata for better debugging and caching:
+
+<ParamField path="meta.name" type="string" required>
+  Plugin name (should match npm package name)
+  
+  ```javascript
+  meta: {
+    name: "eslint-plugin-myproject"
+  }
+  ```
+</ParamField>
+
+<ParamField path="meta.version" type="string" required>
+  Plugin version (should match npm package version)
+  
+  ```javascript
+  meta: {
+    version: "1.0.0"
+  }
+  ```
+</ParamField>
+
+<ParamField path="meta.namespace" type="string" required>
+  Default namespace for accessing plugin features
+  
+  ```javascript
+  meta: {
+    namespace: "myproject"
+  }
+  ```
+</ParamField>
+
+<Tip>
+Read metadata from `package.json`:
+
+```javascript
+import fs from "fs";
+
+const pkg = JSON.parse(
+  fs.readFileSync(new URL("./package.json", import.meta.url), "utf8")
+);
+
+const plugin = {
+  meta: {
+    name: pkg.name,
+    version: pkg.version,
+    namespace: "myproject"
+  }
+};
+```
+</Tip>
+
+## Adding Rules
+
+Export rules in the `rules` object:
+
+```javascript
+const plugin = {
+  meta: {
+    name: "eslint-plugin-example",
+    version: "1.0.0"
+  },
+  
+  rules: {
+    // Rule ID: rule object
+    "no-foo": {
+      meta: {
+        type: "suggestion",
+        docs: {
+          description: "Disallow foo"
+        },
+        messages: {
+          avoid: "Avoid using 'foo'."
+        }
+      },
+      create(context) {
+        return {
+          Identifier(node) {
+            if (node.name === "foo") {
+              context.report({
+                node,
+                messageId: "avoid"
+              });
+            }
+          }
+        };
+      }
+    },
+    
+    "no-bar": {
+      meta: { /* ... */ },
+      create(context) { /* ... */ }
+    }
+  }
+};
+
+export default plugin;
+```
+
+<Note>
+**Rule ID Naming:**
+Rule IDs should not contain `/` characters. Use kebab-case: `no-foo`, `enforce-pattern`.
+</Note>
+
+### Using Plugin Rules
+
+```javascript eslint.config.js
+import example from "eslint-plugin-example";
+
+export default [
+  {
+    plugins: {
+      example
+    },
+    rules: {
+      "example/no-foo": "error",
+      "example/no-bar": "warn"
+    }
+  }
+];
+```
+
+## Adding Processors
+
+Export processors for non-JavaScript files:
+
+```javascript
+const plugin = {
+  meta: {
+    name: "eslint-plugin-markdown",
+    version: "1.0.0"
+  },
+  
+  processors: {
+    // Processor for .md files
+    "markdown": {
+      meta: {
+        name: "markdown-processor",
+        version: "1.0.0"
+      },
+      
+      preprocess(text, filename) {
+        // Extract code blocks
+        const blocks = extractCodeBlocks(text);
+        return blocks.map((block, i) => ({
+          text: block.code,
+          filename: `${i}.js`
+        }));
+      },
+      
+      postprocess(messages, filename) {
+        // Adjust message locations
+        return messages.flat();
+      },
+      
+      supportsAutofix: true
+    }
+  }
+};
+```
+
+### Using Plugin Processors
+
+```javascript eslint.config.js
+import markdown from "eslint-plugin-markdown";
+
+export default [
+  {
+    files: ["**/*.md"],
+    plugins: { markdown },
+    processor: "markdown/markdown"
+  }
+];
+```
+
+## Adding Configurations
+
+Bundle recommended configurations:
+
+```javascript
+const plugin = {
+  meta: {
+    name: "eslint-plugin-example",
+    version: "1.0.0"
+  },
+  
+  rules: {
+    "no-foo": { /* ... */ },
+    "no-bar": { /* ... */ }
+  },
+  
+  configs: {}
+};
+
+// Add configs after defining rules
+Object.assign(plugin.configs, {
+  recommended: [
+    {
+      plugins: {
+        example: plugin
+      },
+      rules: {
+        "example/no-foo": "error",
+        "example/no-bar": "warn"
+      }
+    }
+  ],
+  
+  strict: [
+    {
+      plugins: {
+        example: plugin
+      },
+      rules: {
+        "example/no-foo": "error",
+        "example/no-bar": "error"
+      }
+    }
+  ]
+});
+
+export default plugin;
+```
+
+<Note>
+**Config Format:**
+Configs should be arrays of configuration objects (flat config format). You can also export a single object if there's only one configuration.
+</Note>
+
+### Using Plugin Configs
+
+```javascript eslint.config.js
+import example from "eslint-plugin-example";
+
+export default [
+  {
+    files: ["**/*.js"],
+    plugins: { example },
+    extends: ["example/recommended"]
+  }
+];
+```
+
+## Complete Plugin Example
+
+Here's a full plugin with rules, configs, and metadata:
+
+```javascript index.js
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "package.json"), "utf8")
+);
+
+const plugin = {
+  meta: {
+    name: pkg.name,
+    version: pkg.version,
+    namespace: "myproject"
+  },
+  
+  rules: {
+    "no-dollar-sign": {
+      meta: {
+        type: "suggestion",
+        docs: {
+          description: "Disallow identifiers starting with $",
+          url: "https://example.com/rules/no-dollar-sign"
+        },
+        messages: {
+          noDollar: "Identifier '{{name}}' should not start with '$'."
+        },
+        schema: []
+      },
+      
+      create(context) {
+        return {
+          Identifier(node) {
+            if (node.name.startsWith("$")) {
+              context.report({
+                node,
+                messageId: "noDollar",
+                data: { name: node.name }
+              });
+            }
+          }
+        };
+      }
+    },
+    
+    "require-copyright": {
+      meta: {
+        type: "suggestion",
+        docs: {
+          description: "Require copyright header in files"
+        },
+        messages: {
+          missing: "Missing copyright header."
+        }
+      },
+      
+      create(context) {
+        return {
+          Program(node) {
+            const sourceCode = context.sourceCode;
+            const comments = sourceCode.getAllComments();
+            
+            const hasCopyright = comments.some(comment =>
+              /copyright/i.test(comment.value)
+            );
+            
+            if (!hasCopyright) {
+              context.report({
+                node,
+                messageId: "missing"
+              });
+            }
+          }
+        };
+      }
+    }
+  },
+  
+  configs: {}
+};
+
+// Add configs
+Object.assign(plugin.configs, {
+  recommended: [
+    {
+      plugins: {
+        myproject: plugin
+      },
+      rules: {
+        "myproject/no-dollar-sign": "error",
+        "myproject/require-copyright": "warn"
+      }
+    }
+  ]
+});
+
+export default plugin;
+```
+
+## Plugin Naming Conventions
+
+<Tip>
+Follow these naming conventions for better discoverability:
+
+**Unscoped packages:**
+- Start with `eslint-plugin-`
+- Example: `eslint-plugin-myproject`
+
+**Scoped packages:**
+- Format: `@scope/eslint-plugin` or `@scope/eslint-plugin-name`
+- Examples: `@company/eslint-plugin`, `@company/eslint-plugin-custom`
+</Tip>
+
+## Project Structure
+
+Organize your plugin project:
+
+```
+eslint-plugin-myproject/
+├── package.json
+├── README.md
+├── index.js                 # Plugin entry point
+├── lib/
+│   ├── rules/
+│   │   ├── no-foo.js
+│   │   └── no-bar.js
+│   ├── processors/
+│   │   └── markdown.js
+│   └── configs/
+│       ├── recommended.js
+│       └── strict.js
+└── tests/
+    ├── rules/
+    │   ├── no-foo.test.js
+    │   └── no-bar.test.js
+    └── processors/
+        └── markdown.test.js
+```
+
+### Organizing Rules
+
+```javascript lib/rules/no-foo.js
+export default {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description: "Disallow foo"
+    },
+    messages: {
+      avoid: "Avoid foo."
+    }
+  },
+  
+  create(context) {
+    // Rule implementation
+  }
+};
+```
+
+```javascript index.js
+import noFoo from "./lib/rules/no-foo.js";
+import noBar from "./lib/rules/no-bar.js";
+
+const plugin = {
+  meta: { /* ... */ },
+  rules: {
+    "no-foo": noFoo,
+    "no-bar": noBar
+  }
+};
+
+export default plugin;
+```
+
+## Creating Your Plugin
+
+<Steps>
+  <Step title="Initialize Project">
+    ```bash
+    mkdir eslint-plugin-myproject
+    cd eslint-plugin-myproject
+    npm init -y
+    ```
+  </Step>
+  
+  <Step title="Install Dependencies">
+    ```bash
+    npm install --save-dev eslint
+    ```
+  </Step>
+  
+  <Step title="Create Plugin File">
+    ```javascript index.js
+    const plugin = {
+      meta: {
+        name: "eslint-plugin-myproject",
+        version: "1.0.0",
+        namespace: "myproject"
+      },
+      rules: {
+        // Add your rules
+      },
+      configs: {}
+    };
+    
+    module.exports = plugin;
+    ```
+  </Step>
+  
+  <Step title="Add Rules">
+    Create rules following the [custom rules guide](./custom-rules).
+  </Step>
+  
+  <Step title="Test Locally">
+    Link plugin for local testing:
+    
+    ```bash
+    npm link
+    ```
+    
+    In test project:
+    ```bash
+    npm link eslint-plugin-myproject
+    ```
+  </Step>
+</Steps>
+
+## Testing Plugins
+
+Test rules using `RuleTester`:
+
+```javascript tests/rules/no-foo.test.js
+import { RuleTester } from "eslint";
+import rule from "../../lib/rules/no-foo.js";
+
+const ruleTester = new RuleTester();
+
+ruleTester.run("no-foo", rule, {
+  valid: [
+    "const bar = 1;",
+    "function baz() {}"
+  ],
+  
+  invalid: [
+    {
+      code: "const foo = 1;",
+      errors: [{ messageId: "avoid" }]
+    },
+    {
+      code: "function foo() {}",
+      errors: [{ messageId: "avoid" }]
+    }
+  ]
+});
+```
+
+### Integration Tests
+
+Test the complete plugin:
+
+```javascript tests/plugin.test.js
+import { ESLint } from "eslint";
+import plugin from "../index.js";
+
+const eslint = new ESLint({
+  overrideConfigFile: true,
+  overrideConfig: [
+    {
+      plugins: {
+        myproject: plugin
+      },
+      rules: {
+        "myproject/no-foo": "error"
+      }
+    }
+  ]
+});
+
+const results = await eslint.lintText("const foo = 1;");
+console.log(results[0].messages); // Should have errors
+```
+
+## Publishing Your Plugin
+
+<Steps>
+  <Step title="Update package.json">
+    ```json package.json
+    {
+      "name": "eslint-plugin-myproject",
+      "version": "1.0.0",
+      "description": "Custom ESLint rules for MyProject",
+      "main": "index.js",
+      "keywords": [
+        "eslint",
+        "eslintplugin",
+        "eslint-plugin"
+      ],
+      "peerDependencies": {
+        "eslint": ">=9.0.0"
+      },
+      "author": "Your Name",
+      "license": "MIT"
+    }
+    ```
+  </Step>
+  
+  <Step title="Add README">
+    Document:
+    - Installation instructions
+    - Available rules
+    - Configuration examples
+    - Rule options
+  </Step>
+  
+  <Step title="Publish to npm">
+    ```bash
+    npm publish
+    ```
+  </Step>
+  
+  <Step title="Install in Projects">
+    ```bash
+    npm install --save-dev eslint-plugin-myproject
+    ```
+    
+    Configure:
+    ```javascript eslint.config.js
+    import myproject from "eslint-plugin-myproject";
+    
+    export default [
+      {
+        plugins: { myproject },
+        extends: ["myproject/recommended"]
+      }
+    ];
+    ```
+  </Step>
+</Steps>
+
+## Legacy Config Support
+
+Support both flat and legacy configs:
+
+```javascript
+const plugin = {
+  meta: {
+    name: "eslint-plugin-example",
+    version: "1.0.0"
+  },
+  rules: { /* ... */ },
+  configs: {}
+};
+
+Object.assign(plugin.configs, {
+  // Flat config format
+  "flat/recommended": [
+    {
+      plugins: { example: plugin },
+      rules: {
+        "example/no-foo": "error"
+      }
+    }
+  ],
+  
+  // Legacy format
+  recommended: {
+    plugins: ["example"],
+    rules: {
+      "example/no-foo": "error"
+    }
+  }
+});
+```
+
+## Linting Your Plugin
+
+Lint plugin code with recommended configs:
+
+```javascript eslint.config.js
+import js from "@eslint/js";
+import eslintPlugin from "eslint-plugin-eslint-plugin";
+
+export default [
+  js.configs.recommended,
+  eslintPlugin.configs.recommended,
+  {
+    files: ["lib/rules/**/*.js"],
+    rules: {
+      "eslint-plugin/require-meta-docs-url": "error"
+    }
+  }
+];
+```
+
+<Tip>
+**Recommended Linting:**
+- `eslint` - Core linting
+- `eslint-plugin-eslint-plugin` - Plugin-specific rules
+- `eslint-plugin-n` - Node.js best practices
+</Tip>
+
+## Distribution Checklist
+
+<Steps>
+  <Step title="Documentation">
+    - [ ] Comprehensive README
+    - [ ] Rule documentation with examples
+    - [ ] Configuration examples
+    - [ ] Migration guide (if applicable)
+  </Step>
+  
+  <Step title="Testing">
+    - [ ] Unit tests for all rules
+    - [ ] Integration tests
+    - [ ] Test edge cases
+    - [ ] CI/CD setup
+  </Step>
+  
+  <Step title="Metadata">
+    - [ ] Correct peer dependencies
+    - [ ] Appropriate keywords
+    - [ ] License file
+    - [ ] Changelog
+  </Step>
+  
+  <Step title="Quality">
+    - [ ] Lint your plugin code
+    - [ ] Format consistently
+    - [ ] Document all options
+    - [ ] Provide TypeScript types (if applicable)
+  </Step>
+</Steps>
+
+## Best Practices
+
+<Warning>
+Follow these guidelines:
+
+1. **Use clear rule names** - Descriptive, kebab-case IDs
+2. **Provide good error messages** - Help users understand issues
+3. **Document thoroughly** - Examples for valid/invalid code
+4. **Test comprehensively** - Cover edge cases
+5. **Version carefully** - Follow semver strictly
+6. **Maintain backwards compatibility** - Deprecate before removing
+</Warning>
+
+### Rule Documentation Template
+
+```markdown
+# no-foo (eslint-plugin-myproject)
+
+Disallow the use of `foo` identifiers.
+
+## Rule Details
+
+This rule disallows using `foo` as an identifier name.
+
+## Examples
+
+### Invalid
+
+\`\`\`javascript
+const foo = 1;
+function foo() {}
+\`\`\`
+
+### Valid
+
+\`\`\`javascript
+const bar = 1;
+function baz() {}
+\`\`\`
+
+## When Not To Use It
+
+If your codebase allows `foo` identifiers.
+```
+
+## Real-World Examples
+
+<CardGroup cols={2}>
+  <Card title="@typescript-eslint/eslint-plugin" icon="github" href="https://github.com/typescript-eslint/typescript-eslint/tree/main/packages/eslint-plugin">
+    Comprehensive TypeScript plugin
+  </Card>
+  
+  <Card title="eslint-plugin-react" icon="github" href="https://github.com/jsx-eslint/eslint-plugin-react">
+    React-specific rules and configs
+  </Card>
+  
+  <Card title="eslint-plugin-vue" icon="github" href="https://github.com/vuejs/eslint-plugin-vue">
+    Vue.js plugin with processor
+  </Card>
+  
+  <Card title="eslint-plugin-import" icon="github" href="https://github.com/import-js/eslint-plugin-import">
+    Import/export validation
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Custom Rules" icon="gavel" href="./custom-rules">
+    Learn to create powerful rules
+  </Card>
+  
+  <Card title="Custom Processors" icon="file-code" href="./custom-processors">
+    Add processor support
+  </Card>
+  
+  <Card title="Shareable Configs" icon="share-nodes" href="./shareable-configs">
+    Create standalone config packages
+  </Card>
+</CardGroup>

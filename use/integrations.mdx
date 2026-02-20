@@ -1,0 +1,854 @@
+---
+title: Integrations
+description: Explore ESLint integrations with editors, build tools, and development workflows
+---
+
+# Integrations
+
+ESLint integrates with many development tools and workflows. This page covers the most popular integrations maintained by the community.
+
+<Note>
+The projects on this page are community-maintained and not officially supported by the ESLint team. For issues with specific integrations, please contact the integration maintainers.
+</Note>
+
+## Editor Integrations
+
+### Visual Studio Code
+
+<Card title="ESLint Extension" icon="microsoft" href="https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint">
+  Official ESLint extension for VS Code with real-time feedback
+</Card>
+
+<Steps>
+  <Step title="Install Extension">
+    Search for "ESLint" in VS Code Extensions marketplace
+    
+    ```bash
+    code --install-extension dbaeumer.vscode-eslint
+    ```
+  </Step>
+  
+  <Step title="Configure Settings">
+    Add to your VS Code settings:
+    
+    ```json settings.json
+    {
+      "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
+      ],
+      "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+      },
+      "eslint.format.enable": true
+    }
+    ```
+  </Step>
+  
+  <Step title="Verify">
+    Open a JavaScript file with linting errors and see inline feedback
+  </Step>
+</Steps>
+
+**Features:**
+- Real-time linting as you type
+- Auto-fix on save
+- Quick fixes for violations
+- Rule documentation on hover
+- Flat config support (eslint.config.js)
+
+### JetBrains IDEs
+
+<Card title="WebStorm, IntelliJ IDEA, PyCharm, RubyMine" icon="code" href="https://www.jetbrains.com/help/webstorm/eslint.html">
+  Built-in ESLint support in JetBrains IDEs
+</Card>
+
+<Steps>
+  <Step title="Enable ESLint">
+    Go to: **Settings** → **Languages & Frameworks** → **JavaScript** → **Code Quality Tools** → **ESLint**
+    
+    Check "Automatic ESLint configuration"
+  </Step>
+  
+  <Step title="Configure">
+    - Select Node.js interpreter
+    - Choose ESLint package location
+    - Enable "Run eslint --fix on save"
+  </Step>
+</Steps>
+
+**Features:**
+- Automatic detection of eslint.config.js
+- Inline error highlighting
+- Auto-fix on save
+- Code completion for config files
+- Integration with VCS
+
+### Sublime Text
+
+<AccordionGroup>
+<Accordion title="SublimeLinter-eslint" icon="code">
+
+[SublimeLinter-eslint](https://github.com/SublimeLinter/SublimeLinter-eslint) provides ESLint integration for Sublime Text 3/4.
+
+**Installation:**
+```bash
+# Install SublimeLinter first
+# Then install SublimeLinter-eslint via Package Control
+```
+
+**Features:**
+- Inline error markers
+- Status bar information
+- Configurable highlighting
+- Auto-fix support
+
+</Accordion>
+
+<Accordion title="Build Next" icon="hammer">
+
+[Build Next](https://github.com/albertosantini/sublimetext-buildnext) runs ESLint as a build system.
+
+**Usage:**
+- Tools → Build System → ESLint
+- Ctrl/Cmd + B to lint
+
+</Accordion>
+</AccordionGroup>
+
+### Vim/Neovim
+
+<Tabs>
+  <Tab title="ALE">
+    **[ALE (Asynchronous Lint Engine)](https://github.com/dense-analysis/ale)**
+    
+    ```vim .vimrc
+    " Enable ESLint
+    let g:ale_linters = {
+    \   'javascript': ['eslint'],
+    \   'typescript': ['eslint'],
+    \}
+    
+    " Auto-fix on save
+    let g:ale_fixers = {
+    \   'javascript': ['eslint'],
+    \   'typescript': ['eslint'],
+    \}
+    let g:ale_fix_on_save = 1
+    ```
+    
+    **Features:**
+    - Asynchronous linting
+    - Auto-fix support
+    - Multiple linters
+    - LSP integration
+  </Tab>
+  <Tab title="Syntastic">
+    **[Syntastic](https://github.com/vim-syntastic/syntastic)**
+    
+    ```vim .vimrc
+    " Enable ESLint checker
+    let g:syntastic_javascript_checkers = ['eslint']
+    let g:syntastic_typescript_checkers = ['eslint']
+    
+    " Auto-fix
+    let g:syntastic_javascript_eslint_args = '--fix'
+    ```
+    
+    Classic syntax checking plugin with ESLint support.
+  </Tab>
+  <Tab title="nvim-lspconfig">
+    **[nvim-lspconfig](https://github.com/neovim/nvim-lspconfig)**
+    
+    ```lua init.lua
+    require('lspconfig').eslint.setup({
+      on_attach = function(client, bufnr)
+        vim.api.nvim_create_autocmd("BufWritePre", {
+          buffer = bufnr,
+          command = "EslintFixAll",
+        })
+      end,
+    })
+    ```
+    
+    LSP integration for Neovim.
+  </Tab>
+  <Tab title="nvim-lint">
+    **[nvim-lint](https://github.com/mfussenegger/nvim-lint)**
+    
+    ```lua init.lua
+    require('lint').linters_by_ft = {
+      javascript = {'eslint'},
+      typescript = {'eslint'},
+    }
+    
+    vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+      callback = function()
+        require("lint").try_lint()
+      end,
+    })
+    ```
+  </Tab>
+</Tabs>
+
+### Emacs
+
+<Card title="Flycheck" icon="code" href="http://www.flycheck.org/">
+  On-the-fly syntax checking for Emacs
+</Card>
+
+**Configuration:**
+```elisp .emacs
+;; Enable Flycheck
+(add-hook 'after-init-hook #'global-flycheck-mode)
+
+;; Use ESLint for JavaScript
+(setq-default flycheck-disabled-checkers
+  (append flycheck-disabled-checkers
+    '(javascript-jshint)))
+
+;; Use eslint with web-mode
+(flycheck-add-mode 'javascript-eslint 'web-mode)
+```
+
+The [javascript-eslint](http://www.flycheck.org/en/latest/languages.html#javascript) checker is built into Flycheck.
+
+### Other Editors
+
+<CardGroup cols={2}>
+  <Card title="Eclipse Orion" icon="eclipse">
+    ESLint is the default linter
+  </Card>
+  <Card title="Eclipse IDE" icon="eclipse">
+    [Tern ESLint linter](https://github.com/angelozerr/tern.java/wiki/Tern-Linter-ESLint)
+  </Card>
+  <Card title="TextMate 2" icon="code">
+    [eslint.tmbundle](https://github.com/ryanfitzer/eslint.tmbundle) or [javascript-eslint.tmbundle](https://github.com/natesilva/javascript-eslint.tmbundle)
+  </Card>
+  <Card title="Brackets" icon="brackets">
+    [Brackets ESLint](https://github.com/brackets-userland/brackets-eslint)
+  </Card>
+  <Card title="Visual Studio" icon="windows">
+    [Linting JavaScript in VS](https://learn.microsoft.com/en-us/visualstudio/javascript/linting-javascript?view=vs-2022)
+  </Card>
+</CardGroup>
+
+## Build Tool Integrations
+
+### Webpack
+
+<Card title="eslint-webpack-plugin" icon="cube" href="https://www.npmjs.com/package/eslint-webpack-plugin">
+  ESLint plugin for Webpack
+</Card>
+
+<Steps>
+  <Step title="Install">
+    ```bash
+    npm install --save-dev eslint-webpack-plugin
+    ```
+  </Step>
+  
+  <Step title="Configure">
+    ```javascript webpack.config.js
+    const ESLintPlugin = require('eslint-webpack-plugin');
+    
+    module.exports = {
+      // ...
+      plugins: [
+        new ESLintPlugin({
+          extensions: ['js', 'jsx', 'ts', 'tsx'],
+          fix: true,  // Auto-fix during build
+          failOnError: true,  // Fail build on errors
+          failOnWarning: false,
+          cache: true,
+          cacheLocation: '.eslintcache'
+        })
+      ]
+    };
+    ```
+  </Step>
+</Steps>
+
+**Options:**
+- `extensions` - File extensions to lint
+- `fix` - Enable auto-fixing
+- `failOnError` - Fail build on errors
+- `failOnWarning` - Fail build on warnings
+- `cache` - Enable caching for performance
+- `exclude` - Patterns to exclude
+- `formatter` - Output formatter
+
+### Rollup
+
+<Card title="@rollup/plugin-eslint" icon="circle" href="https://www.npmjs.com/package/@rollup/plugin-eslint">
+  ESLint plugin for Rollup
+</Card>
+
+<Steps>
+  <Step title="Install">
+    ```bash
+    npm install --save-dev @rollup/plugin-eslint
+    ```
+  </Step>
+  
+  <Step title="Configure">
+    ```javascript rollup.config.js
+    import eslint from '@rollup/plugin-eslint';
+    
+    export default {
+      input: 'src/index.js',
+      output: {
+        file: 'dist/bundle.js',
+        format: 'cjs'
+      },
+      plugins: [
+        eslint({
+          fix: true,
+          throwOnError: true,
+          throwOnWarning: false,
+          include: ['src/**/*.js'],
+          exclude: ['node_modules/**']
+        })
+      ]
+    };
+    ```
+  </Step>
+</Steps>
+
+### Grunt
+
+<Card title="grunt-eslint" icon="hammer" href="https://www.npmjs.com/package/grunt-eslint">
+  ESLint task for Grunt
+</Card>
+
+```javascript Gruntfile.js
+module.exports = function(grunt) {
+  grunt.initConfig({
+    eslint: {
+      target: ['src/**/*.js'],
+      options: {
+        fix: true,
+        outputFile: 'reports/eslint.html',
+        format: 'html'
+      }
+    }
+  });
+
+  grunt.loadNpmTasks('grunt-eslint');
+  grunt.registerTask('default', ['eslint']);
+};
+```
+
+## Command Line Tools
+
+<AccordionGroup>
+<Accordion title="ESLint Watch" icon="eye">
+
+**[eslint-watch](https://www.npmjs.com/package/eslint-watch)**
+
+Watch files and run ESLint on changes:
+
+```bash
+npm install --save-dev eslint-watch
+```
+
+**Usage:**
+```bash
+# Watch current directory
+npx esw .
+
+# Watch specific directories
+npx esw src/ lib/
+
+# With auto-fix
+npx esw --fix src/
+
+# Custom format
+npx esw --format compact src/
+```
+
+**Features:**
+- File watching
+- Auto-fix on save
+- Custom formatters
+- Ignore patterns
+- Debouncing
+
+</Accordion>
+
+<Accordion title="Code Climate CLI" icon="cloud">
+
+**[Code Climate CLI](https://github.com/codeclimate/codeclimate)**
+
+Run Code Climate analysis locally:
+
+```bash
+# Install
+brew tap codeclimate/formulae
+brew install codeclimate
+
+# Run ESLint via Code Climate
+codeclimate analyze
+```
+
+Integrates ESLint with Code Climate quality analysis.
+
+</Accordion>
+
+<Accordion title="ESLint Nibble" icon="chart-line">
+
+**[ESLint Nibble](https://github.com/IanVS/eslint-nibble)**
+
+Gradually improve code quality:
+
+```bash
+npm install --save-dev eslint-nibble
+```
+
+**Usage:**
+```bash
+# Show rules with most violations
+npx eslint-nibble src/
+
+# Fix specific rule
+npx eslint-nibble --rule no-console src/
+```
+
+Great for tackling large codebases incrementally.
+
+</Accordion>
+</AccordionGroup>
+
+## Source Control Integration
+
+### Git Hooks
+
+<Tabs>
+  <Tab title="Husky + lint-staged">
+    **Recommended approach**
+    
+    <Steps>
+      <Step title="Install">
+        ```bash
+        npm install --save-dev husky lint-staged
+        npx husky init
+        ```
+      </Step>
+      
+      <Step title="Configure lint-staged">
+        ```json package.json
+        {
+          "lint-staged": {
+            "*.{js,jsx,ts,tsx}": [
+              "eslint --fix",
+              "git add"
+            ]
+          }
+        }
+        ```
+      </Step>
+      
+      <Step title="Add pre-commit hook">
+        ```bash .husky/pre-commit
+        #!/usr/bin/env sh
+        . "$(dirname -- "$0")/_/husky.sh"
+        
+        npx lint-staged
+        ```
+      </Step>
+    </Steps>
+    
+    **Benefits:**
+    - Only lints staged files
+    - Fast execution
+    - Auto-fix before commit
+    - Easy configuration
+  </Tab>
+  <Tab title="Git Pre-commit Hook">
+    **Manual hook setup**
+    
+    ```bash .git/hooks/pre-commit
+    #!/bin/bash
+    
+    # Get list of staged JS files
+    FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\\.jsx?$')
+    
+    if [ -z "$FILES" ]; then
+      exit 0
+    fi
+    
+    # Run ESLint on staged files
+    npx eslint $FILES
+    
+    if [ $? -ne 0 ]; then
+      echo "ESLint failed. Commit aborted."
+      exit 1
+    fi
+    ```
+    
+    Make executable:
+    ```bash
+    chmod +x .git/hooks/pre-commit
+    ```
+  </Tab>
+  <Tab title="Overcommit">
+    **[Overcommit](https://github.com/brigade/overcommit)**
+    
+    Git hook manager with ESLint support:
+    
+    ```yaml .overcommit.yml
+    PreCommit:
+      EsLint:
+        enabled: true
+        required_executable: 'npx'
+        flags: ['--format=compact']
+        include:
+          - '**/*.js'
+          - '**/*.jsx'
+    ```
+  </Tab>
+</Tabs>
+
+### CI/CD Integration
+
+<Tabs>
+  <Tab title="GitHub Actions">
+    ```yaml .github/workflows/lint.yml
+    name: ESLint
+    
+    on:
+      push:
+        branches: [ main, develop ]
+      pull_request:
+        branches: [ main ]
+    
+    jobs:
+      lint:
+        runs-on: ubuntu-latest
+        
+        steps:
+          - uses: actions/checkout@v3
+          
+          - name: Setup Node.js
+            uses: actions/setup-node@v3
+            with:
+              node-version: '20'
+              cache: 'npm'
+          
+          - name: Install dependencies
+            run: npm ci
+          
+          - name: Run ESLint
+            run: npm run lint
+          
+          - name: Generate report
+            if: failure()
+            run: npx eslint --format json --output-file eslint-report.json src/
+          
+          - name: Upload report
+            if: failure()
+            uses: actions/upload-artifact@v3
+            with:
+              name: eslint-report
+              path: eslint-report.json
+    ```
+  </Tab>
+  <Tab title="GitLab CI">
+    ```yaml .gitlab-ci.yml
+    lint:
+      stage: test
+      image: node:20
+      
+      cache:
+        paths:
+          - node_modules/
+          - .eslintcache
+      
+      script:
+        - npm ci
+        - npx eslint --format json --output-file gl-code-quality-report.json src/
+      
+      artifacts:
+        reports:
+          codequality: gl-code-quality-report.json
+        paths:
+          - gl-code-quality-report.json
+        when: always
+        expire_in: 1 week
+    ```
+  </Tab>
+  <Tab title="CircleCI">
+    ```yaml .circleci/config.yml
+    version: 2.1
+    
+    jobs:
+      lint:
+        docker:
+          - image: cimg/node:20.0
+        steps:
+          - checkout
+          - restore_cache:
+              keys:
+                - v1-dependencies-{{ checksum "package-lock.json" }}
+          - run:
+              name: Install dependencies
+              command: npm ci
+          - save_cache:
+              paths:
+                - node_modules
+              key: v1-dependencies-{{ checksum "package-lock.json" }}
+          - run:
+              name: Run ESLint
+              command: |
+                mkdir -p reports
+                npx eslint --format json --output-file reports/eslint.json src/
+          - store_artifacts:
+              path: reports
+          - store_test_results:
+              path: reports
+    
+    workflows:
+      version: 2
+      test:
+        jobs:
+          - lint
+    ```
+  </Tab>
+  <Tab title="Jenkins">
+    ```groovy Jenkinsfile
+    pipeline {
+      agent {
+        docker {
+          image 'node:20'
+        }
+      }
+      
+      stages {
+        stage('Install') {
+          steps {
+            sh 'npm ci'
+          }
+        }
+        
+        stage('Lint') {
+          steps {
+            sh 'npx eslint --format json --output-file eslint-report.json src/'
+          }
+          post {
+            always {
+              archiveArtifacts artifacts: 'eslint-report.json'
+            }
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Mega-Linter
+
+<Card title="Mega-Linter" icon="robot" href="https://megalinter.io/latest/">
+  Linters aggregator for CI, embedding ESLint
+</Card>
+
+```yaml .mega-linter.yml
+APPLY_FIXES: all
+JAVASCRIPT_ES_CONFIG_FILE: eslint.config.js
+JAVASCRIPT_ES_FILTER_REGEX_INCLUDE: (src/)
+SHOW_ELAPSED_TIME: true
+
+ENABLE:
+  - JAVASCRIPT
+```
+
+**Features:**
+- 70+ linters in one tool
+- Auto-fix support
+- Pre-configured for CI
+- Multi-language support
+- Report aggregation
+
+## Package Scripts
+
+Common ESLint scripts in `package.json`:
+
+```json package.json
+{
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "lint:cache": "eslint --cache .",
+    "lint:report": "eslint --format html . > reports/eslint-report.html",
+    "lint:ci": "eslint --format json --output-file reports/eslint.json .",
+    "lint:watch": "esw --watch --clear .",
+    "prelint": "echo 'Running ESLint...'",
+    "postlint": "echo 'Linting complete!'",
+    
+    "precommit": "lint-staged",
+    "prepush": "npm run lint"
+  }
+}
+```
+
+## Integration Best Practices
+
+<AccordionGroup>
+<Accordion title="Editor Integration" icon="code">
+
+**Best practices for editor setup:**
+
+1. **Use auto-fix on save**
+   ```json
+   "editor.codeActionsOnSave": {
+     "source.fixAll.eslint": true
+   }
+   ```
+
+2. **Configure proper file associations**
+   ```json
+   "eslint.validate": [
+     "javascript",
+     "javascriptreact",
+     "typescript",
+     "typescriptreact"
+   ]
+   ```
+
+3. **Enable flat config support**
+   ```json
+   "eslint.useFlatConfig": true
+   ```
+
+4. **Show rule IDs in errors**
+   - Helps when configuring rules
+   - Makes it easy to disable specific rules
+
+</Accordion>
+
+<Accordion title="Build Tools" icon="hammer">
+
+**Best practices for build integration:**
+
+1. **Cache results**
+   ```javascript
+   new ESLintPlugin({
+     cache: true,
+     cacheLocation: '.eslintcache'
+   })
+   ```
+
+2. **Fail builds appropriately**
+   - Fail on errors: Production
+   - Warn on errors: Development
+
+3. **Run before other plugins**
+   - Catch errors early
+   - Avoid processing invalid code
+
+4. **Use separate CI linting**
+   - Don't slow down dev builds
+   - Run full lint in CI/CD
+
+</Accordion>
+
+<Accordion title="Git Hooks" icon="git">
+
+**Best practices for git hooks:**
+
+1. **Only lint staged files**
+   ```json
+   "lint-staged": {
+     "*.{js,jsx}": ["eslint --fix"]
+   }
+   ```
+
+2. **Auto-fix when possible**
+   - Reduces friction
+   - Keeps commits clean
+
+3. **Provide escape hatch**
+   ```bash
+   git commit --no-verify
+   ```
+
+4. **Make hooks fast**
+   - Use caching
+   - Lint only changed files
+
+</Accordion>
+
+<Accordion title="CI/CD" icon="circle-check">
+
+**Best practices for CI/CD:**
+
+1. **Fail fast**
+   ```yaml
+   - run: npm run lint
+     if: always()
+   ```
+
+2. **Cache node_modules and .eslintcache**
+   ```yaml
+   cache:
+     paths:
+       - node_modules/
+       - .eslintcache
+   ```
+
+3. **Generate reports**
+   ```bash
+   npx eslint --format json --output-file report.json src/
+   ```
+
+4. **Set max warnings**
+   ```bash
+   npx eslint --max-warnings 0 src/
+   ```
+
+</Accordion>
+</AccordionGroup>
+
+## Additional Resources
+
+<CardGroup cols={2}>
+  <Card title="awesome-eslint" icon="star" href="https://github.com/dustinspecker/awesome-eslint">
+    Curated list of ESLint integrations and plugins
+  </Card>
+  <Card title="Command Line" icon="terminal" href="./command-line">
+    Learn about CLI options for integrations
+  </Card>
+  <Card title="Formatters" icon="paint-brush" href="./formatters">
+    Choose the right formatter for your integration
+  </Card>
+  <Card title="Configuration" icon="gear" href="./configuration">
+    Configure ESLint for your project
+  </Card>
+</CardGroup>
+
+## Contributing an Integration
+
+If you've created an ESLint integration and would like it to be listed here:
+
+1. Ensure it works with the latest ESLint version
+2. Provide clear documentation
+3. Submit a pull request to the [ESLint repository](https://github.com/eslint/eslint)
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Core Concepts" icon="book" href="./core-concepts">
+    Understanding ESLint fundamentals
+  </Card>
+  <Card title="Configuration" icon="gear" href="./configuration">
+    Configure ESLint for your workflow
+  </Card>
+  <Card title="Command Line" icon="terminal" href="./command-line">
+    CLI options and usage
+  </Card>
+  <Card title="Formatters" icon="paint-brush" href="./formatters">
+    Output format options
+  </Card>
+</CardGroup>

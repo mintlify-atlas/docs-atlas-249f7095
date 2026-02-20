@@ -1,0 +1,174 @@
+---
+title: default-case
+description: Require default cases in switch statements
+---
+
+# default-case
+
+Some coding conventions require that all `switch` statements have a `default` case, even if empty.
+
+<Note>
+**Rule Type:** Suggestion  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+Always having a `default` case makes it clear whether the developer forgot to handle a case or intentionally has no default behavior.
+
+```js
+switch (foo) {
+    case 1:
+        doSomething();
+        break;
+    case 2:
+        doSomething();
+        break;
+    default:
+        // do nothing
+}
+```
+
+## Rule Details
+
+This rule requires a `default` clause in `switch` statements. You can optionally include a `// no default` comment if there's no default case.
+
+## Examples
+
+### Incorrect Code
+
+```js
+switch (a) {
+    case 1:
+        /* code */
+        break;
+}
+```
+
+### Correct Code
+
+```js
+// With default case
+switch (a) {
+    case 1:
+        /* code */
+        break;
+    default:
+        /* code */
+        break;
+}
+
+// With comment indicating intentional omission
+switch (a) {
+    case 1:
+        /* code */
+        break;
+    // no default
+}
+
+switch (a) {
+    case 1:
+        /* code */
+        break;
+    // No Default
+}
+```
+
+## Options
+
+### `commentPattern`
+
+**Type:** `string` (regex)  
+**Default:** `/^no default$/i`
+
+Customize the comment pattern that indicates an intentional omission:
+
+```js
+{
+  "rules": {
+    "default-case": ["error", { 
+      "commentPattern": "^skip\\sdefault" 
+    }]
+  }
+}
+```
+
+**Examples with custom pattern:**
+
+```js
+switch(a) {
+    case 1:
+        /* code */
+        break;
+    // skip default
+}
+
+switch(a) {
+    case 1:
+        /* code */
+        break;
+    // skip default case
+}
+```
+
+## Best Practices
+
+### Explicit Default Handling
+
+<Tip>
+Even if the default does nothing, make it explicit to show it was considered.
+</Tip>
+
+```js
+// Good: Shows you thought about defaults
+switch (userType) {
+    case 'admin':
+        grantAdminAccess();
+        break;
+    case 'user':
+        grantUserAccess();
+        break;
+    default:
+        // Unknown user type, no special access
+        break;
+}
+```
+
+### Error Handling in Default
+
+```js
+// Handle unexpected values
+switch (status) {
+    case 'pending':
+        showPending();
+        break;
+    case 'completed':
+        showCompleted();
+        break;
+    default:
+        throw new Error(`Unknown status: ${status}`);
+}
+```
+
+### Logging Unknown Cases
+
+```js
+// Log for debugging
+switch (action.type) {
+    case 'INCREMENT':
+        return state + 1;
+    case 'DECREMENT':
+        return state - 1;
+    default:
+        console.warn(`Unknown action type: ${action.type}`);
+        return state;
+}
+```
+
+## When Not to Use It
+
+Disable this rule if you don't want to require `default` cases or comments in `switch` statements.
+
+## Related Rules
+
+- [no-fallthrough](/rules/no-fallthrough)

@@ -1,80 +1,338 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start Guide
+description: Get up and running with ESLint in under 5 minutes. This guide walks you through installation, configuration, and your first lint.
 ---
 
-## Get started in three steps
+# Quick Start Guide
 
-Get your documentation site running locally and make your first customization.
+Get ESLint analyzing your JavaScript code in under 5 minutes. This guide will walk you through the essentials.
 
-### Step 1: Set up your local environment
+## Prerequisites
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+Before you begin, ensure you have Node.js installed:
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  **Required**: Node.js `^20.19.0`, `^22.13.0`, or `>=24` built with SSL support.
+  
+  Check your version: `node --version`
 </Note>
+
+## Installation & Setup
+
+<Steps>
+  <Step title="Initialize ESLint Configuration">
+    Run the interactive configuration wizard to set up ESLint for your project:
+    
+    ```bash
+    npm init @eslint/config@latest
+    ```
+    
+    This command will:
+    - Detect your project type (JavaScript, TypeScript, React, etc.)
+    - Ask about your code style preferences
+    - Install required dependencies
+    - Create an `eslint.config.js` file
+    
+    <Tip>
+      The wizard is smart enough to detect if you're using React, Vue, or TypeScript and will configure ESLint accordingly.
+    </Tip>
+  </Step>
+
+  <Step title="Run Your First Lint">
+    Lint a single file:
+    
+    ```bash
+    npx eslint yourfile.js
+    ```
+    
+    Or lint an entire directory:
+    
+    ```bash
+    npx eslint src/
+    ```
+    
+    <CodeGroup>
+    ```bash Success (no issues)
+    $ npx eslint src/index.js
+    # No output means no problems found!
+    ```
+    
+    ```bash With Errors
+    $ npx eslint src/index.js
+    
+    /path/to/src/index.js
+      1:1   error  'x' is assigned a value but never used  no-unused-vars
+      3:10  error  'foo' is not defined                     no-undef
+    
+    ✖ 2 problems (2 errors, 0 warnings)
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Fix Problems Automatically">
+    Many ESLint errors can be fixed automatically. Run with the `--fix` flag:
+    
+    ```bash
+    npx eslint --fix yourfile.js
+    ```
+    
+    This will automatically fix:
+    - Spacing and indentation issues
+    - Missing semicolons
+    - Quote style inconsistencies
+    - And many other stylistic problems
+    
+    <Warning>
+      The `--fix` flag modifies your files in place. Make sure your code is committed or backed up before running it.
+    </Warning>
+  </Step>
+
+  <Step title="Add Lint Script to package.json">
+    Add ESLint to your npm scripts for easy access:
+    
+    ```json package.json
+    {
+      "scripts": {
+        "lint": "eslint .",
+        "lint:fix": "eslint --fix ."
+      }
+    }
+    ```
+    
+    Now you can run:
+    
+    ```bash
+    npm run lint      # Check for problems
+    npm run lint:fix  # Fix problems automatically
+    ```
+  </Step>
+</Steps>
+
+## Understanding the Config File
+
+The configuration wizard creates an `eslint.config.js` file. Here's what a basic config looks like:
+
+```js eslint.config.js
+import { defineConfig } from "eslint/config";
+
+export default defineConfig([
+  {
+    files: ["**/*.js", "**/*.cjs", "**/*.mjs"],
+    rules: {
+      "prefer-const": "warn",
+      "no-constant-binary-expression": "error",
+    },
+  },
+]);
+```
+
+### Configuration Breakdown
+
+<AccordionGroup>
+  <Accordion title="files" icon="file">
+    Specifies which files ESLint should analyze. Supports glob patterns:
+    
+    ```js
+    files: ["**/*.js", "**/*.cjs", "**/*.mjs"]
+    ```
+    
+    This matches all `.js`, `.cjs`, and `.mjs` files in any directory.
+  </Accordion>
+  
+  <Accordion title="rules" icon="list-check">
+    Configures individual rules with severity levels:
+    
+    - `"off"` or `0` - Disable the rule
+    - `"warn"` or `1` - Show warning (exit code 0)
+    - `"error"` or `2` - Show error (exit code 1)
+    
+    ```js
+    rules: {
+      "no-unused-vars": "error",
+      "no-console": "warn",
+      "quotes": ["error", "double"],
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="extends" icon="layer-group">
+    Import configurations from presets:
+    
+    ```js
+    import js from "@eslint/js";
+    
+    export default defineConfig([
+      js.configs.recommended,  // Use recommended rules
+      {
+        // Your custom rules
+      },
+    ]);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Common Rules to Start With
+
+Here are some essential rules from the ESLint source code:
+
+<CardGroup cols={2}>
+  <Card title="no-unused-vars" icon="exclamation-triangle">
+    **Type**: Problem  
+    **Recommended**: ✓
+    
+    Disallow unused variables to keep your code clean.
+    
+    ```js
+    // ❌ Error
+    const x = 5; // 'x' is never used
+    
+    // ✓ Correct
+    const x = 5;
+    console.log(x);
+    ```
+  </Card>
+  
+  <Card title="no-undef" icon="question-circle">
+    **Type**: Problem  
+    **Recommended**: ✓
+    
+    Disallow undefined variables to catch typos early.
+    
+    ```js
+    // ❌ Error
+    console.log(foo); // 'foo' is not defined
+    
+    // ✓ Correct
+    const foo = 'bar';
+    console.log(foo);
+    ```
+  </Card>
+  
+  <Card title="prefer-const" icon="lock">
+    **Type**: Suggestion  
+    **Fixable**: ✓
+    
+    Suggest using const for variables that are never reassigned.
+    
+    ```js
+    // ⚠ Warning
+    let x = 5; // 'x' is never reassigned
+    
+    // ✓ Correct
+    const x = 5;
+    ```
+  </Card>
+  
+  <Card title="no-debugger" icon="bug">
+    **Type**: Problem  
+    **Recommended**: ✓
+    
+    Disallow debugger statements in production code.
+    
+    ```js
+    // ❌ Error
+    debugger;
+    
+    // ✓ Use proper debugging tools instead
+    ```
+  </Card>
+</CardGroup>
+
+## CLI Options Quick Reference
+
+Here are the most commonly used CLI options from ESLint's source:
+
+```bash
+# Fix problems automatically
+eslint --fix file.js
+
+# Use a specific config file
+eslint -c custom-config.js file.js
+
+# Specify output format
+eslint --format json file.js
+
+# Set maximum warnings before error
+eslint --max-warnings 10 .
+
+# Lint with quiet mode (errors only)
+eslint --quiet file.js
+
+# Debug mode for troubleshooting
+eslint --debug file.js
+```
+
+<Tip>
+  For a complete list of CLI options, run `npx eslint --help` or check the [options.js](https://github.com/eslint/eslint/blob/main/lib/options.js) source file.
+</Tip>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Deep Dive into Installation" icon="download" href="/installation">
+    Learn about advanced installation options, pnpm setup, and TypeScript configuration
+  </Card>
+  
+  <Card title="Configuration Guide" icon="gear" href="https://eslint.org/docs/latest/use/configure">
+    Master ESLint's powerful configuration system
+  </Card>
+  
+  <Card title="Rules Reference" icon="book" href="https://eslint.org/docs/rules/">
+    Browse all 200+ built-in rules with examples
+  </Card>
+  
+  <Card title="Create Custom Rules" icon="code" href="https://eslint.org/docs/latest/extend/custom-rules">
+    Build your own rules to enforce project-specific patterns
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="ESLint is not finding my config file">
+    Make sure your config file is named `eslint.config.js`, `eslint.config.mjs`, or `eslint.config.cjs` and is in your project root.
+    
+    You can also specify a config file explicitly:
+    ```bash
+    npx eslint -c path/to/config.js file.js
+    ```
+  </Accordion>
+  
+  <Accordion title="Getting 'Parsing error' messages">
+    This usually means ESLint can't parse your JavaScript syntax. If you're using modern syntax or TypeScript:
+    
+    ```bash
+    npm install --save-dev @typescript-eslint/parser
+    ```
+    
+    Then update your config:
+    ```js
+    import tsParser from "@typescript-eslint/parser";
+    
+    export default defineConfig([
+      {
+        languageOptions: {
+          parser: tsParser,
+        },
+      },
+    ]);
+    ```
+  </Accordion>
+  
+  <Accordion title="Rules are not being applied">
+    Check that:
+    1. The `files` pattern matches your source files
+    2. The rule is spelled correctly (e.g., `no-unused-vars`, not `no-unused-variables`)
+    3. Your config file is being loaded (run with `--debug` flag)
+    
+    ```bash
+    npx eslint --debug file.js
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Need Help?
+
+- Join the [Discord community](https://eslint.org/chat)
+- Ask questions on [GitHub Discussions](https://github.com/eslint/eslint/discussions)
+- Check the [FAQ](https://eslint.org/docs/latest/use/faq)

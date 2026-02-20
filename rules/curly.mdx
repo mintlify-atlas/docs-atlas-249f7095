@@ -1,0 +1,388 @@
+---
+title: curly
+description: Enforce consistent brace style for all control statements
+---
+
+# curly
+
+JavaScript allows omitting braces around single-statement blocks. This rule enforces consistent brace usage.
+
+<Note>
+**Rule Type:** Suggestion  
+**Fixable:** Yes (automatically fixable)
+</Note>
+
+## Why This Rule Exists
+
+Omitting braces can lead to bugs when adding more statements:
+
+```js
+if (foo)
+    bar();
+    baz(); // Oops! Always runs (not part of if)
+```
+
+Many style guides recommend always using braces for clarity and bug prevention.
+
+## Rule Details
+
+This rule enforces consistent brace usage for `if`, `else`, `for`, `while`, and `do` statements.
+
+## Options
+
+This rule has several styles:
+
+### `"all"` (default)
+
+Always require braces around all control statements.
+
+**Incorrect:**
+
+```js
+if (foo) foo++;
+
+while (bar)
+    baz();
+
+if (foo) {
+    baz();
+} else qux();
+```
+
+**Correct:**
+
+```js
+if (foo) {
+    foo++;
+}
+
+while (bar) {
+    baz();
+}
+
+if (foo) {
+    baz();
+} else {
+    qux();
+}
+```
+
+### `"multi"`
+
+Require braces only when there are multiple statements.
+
+**Incorrect:**
+
+```js
+// Single statement with braces
+if (foo) {
+    foo++;
+}
+
+// One branch with braces, one without
+if (foo) bar();
+else {
+    foo++;
+}
+```
+
+**Correct:**
+
+```js
+if (foo) foo++;
+
+if (foo) bar();
+else foo();
+
+while (true) {
+    doSomething();
+    doSomethingElse();
+}
+```
+
+### `"multi-line"`
+
+Require braces when the statement spans multiple lines.
+
+**Incorrect:**
+
+```js
+if (foo)
+  doSomething();
+else
+  doSomethingElse();
+
+if (foo) foo(
+  bar,
+  baz);
+```
+
+**Correct:**
+
+```js
+// Single line - OK without braces
+if (foo) foo++; else doSomething();
+
+if (foo) foo++;
+else if (bar) baz()
+else doSomething();
+
+do something();
+while (foo);
+
+// Multi-line - braces required
+while (foo
+  && bar) baz();
+
+if (foo) {
+    foo++;
+}
+
+if (foo) { foo++; }
+```
+
+### `"multi-or-nest"`
+
+Require braces when there are multiple statements OR nested statements.
+
+**Incorrect:**
+
+```js
+// Nested statement without braces on outer
+while (true)
+  if(foo)
+      doSomething();
+  else
+      doSomethingElse();
+
+// Multi-line object without braces
+if (!foo)
+    foo = {
+        bar: baz,
+        qux: foo
+    };
+
+// Single statement with braces
+if (foo) {
+    foo++;
+}
+```
+
+**Correct:**
+
+```js
+// Nested - use braces on outer
+while (true) {
+  if(foo)
+      doSomething();
+  else
+      doSomethingElse();
+}
+
+// Multi-line - use braces
+if (!foo) {
+    foo = {
+        bar: baz,
+        qux: foo
+    };
+}
+
+// Single line - no braces needed
+if (foo)
+    foo++;
+
+while (true)
+    doSomething();
+```
+
+### `"consistent"`
+
+With `multi` options, enforce all branches of `if-else-if` chain to be consistent.
+
+**Incorrect:**
+
+```js
+// Mixed: one with braces, one without
+if (foo) {
+    bar();
+    baz();
+} else
+    buz();
+
+// Mixed chain
+if (foo)
+    bar();
+else if (faa)
+    bor();
+else {
+    other();
+    things();
+}
+```
+
+**Correct:**
+
+```js
+// All with braces
+if (foo) {
+    bar();
+    baz();
+} else {
+    buz();
+}
+
+// All without braces
+if (foo) {
+    bar();
+} else if (faa) {
+    bor();
+} else {
+    other();
+    things();
+}
+
+if (true)
+    foo();
+else
+    baz();
+```
+
+## Configuration Examples
+
+```js
+// Always require braces (recommended)
+{
+  "rules": {
+    "curly": "error"
+  }
+}
+
+// Allow single statements without braces
+{
+  "rules": {
+    "curly": ["error", "multi"]
+  }
+}
+
+// Require braces for multi-line only
+{
+  "rules": {
+    "curly": ["error", "multi-line"]
+  }
+}
+
+// Multi with consistent branches
+{
+  "rules": {
+    "curly": ["error", "multi", "consistent"]
+  }
+}
+
+// Require braces for nested or multi-statement
+{
+  "rules": {
+    "curly": ["error", "multi-or-nest"]
+  }
+}
+```
+
+## Common Bug Patterns
+
+### The "goto fail" Bug
+
+<Warning>
+This famous Apple SSL bug could have been prevented by always using braces.
+</Warning>
+
+```js
+// Vulnerable to bugs
+if (error)
+    goto fail;
+    goto fail; // Always executes!
+
+// Safe with braces
+if (error) {
+    goto fail;
+}
+```
+
+### Adding Statements
+
+```js
+// Before: Works correctly
+if (condition)
+    doSomething();
+
+// After: Added logging, introduced bug!
+if (condition)
+    console.log('doing something');
+    doSomething(); // Always runs!
+
+// With braces: Safe to add statements
+if (condition) {
+    console.log('doing something');
+    doSomething();
+}
+```
+
+### Misleading Indentation
+
+```js
+// Looks like both statements are in the if
+if (user.isAdmin)
+    console.log('Admin user');
+    deleteAllUsers(); // Actually always runs!
+
+// Braces make it clear
+if (user.isAdmin) {
+    console.log('Admin user');
+    deleteAllUsers();
+}
+```
+
+## When to Use Each Style
+
+### "all" - Most Teams
+
+<Tip>
+Best for teams that want maximum safety and clarity. Recommended for most projects.
+</Tip>
+
+- Prevents the "goto fail" class of bugs
+- Makes code more maintainable
+- Clear and consistent
+
+### "multi" or "multi-line" - Experienced Teams
+
+Suitable if:
+- Team is very disciplined about code style
+- You value conciseness
+- You have good diff/review processes
+
+### "multi-or-nest" - Balanced Approach
+
+Good middle ground:
+- Allows simple single-line statements
+- Requires braces for complex cases
+- Prevents most common bugs
+
+## When Not to Use It
+
+Disable this rule if:
+1. You don't want to enforce a particular brace style
+2. You use a formatter like Prettier (which handles braces)
+3. Your team hasn't agreed on a brace style
+
+## Auto-fixing
+
+This rule is auto-fixable:
+
+```bash
+eslint --fix your-file.js
+```
+
+## Related Rules
+
+- [brace-style](/rules/brace-style) - Brace placement style
+- [nonblock-statement-body-position](/rules/nonblock-statement-body-position) - Position of single-line bodies
+- [arrow-body-style](/rules/arrow-body-style) - Arrow function body style

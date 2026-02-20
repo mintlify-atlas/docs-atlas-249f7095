@@ -1,0 +1,245 @@
+---
+title: no-caller
+description: Disallow the use of arguments.caller and arguments.callee
+---
+
+# no-caller
+
+The use of `arguments.caller` and `arguments.callee` make code optimizations impossible and are deprecated in ES5 strict mode.
+
+<Note>
+**Rule Type:** Suggestion  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+- **Deprecated**: Forbidden in ES5 strict mode
+- **Performance**: Prevents JavaScript engine optimizations
+- **Security**: Can leak function references
+- **Maintainability**: Makes code harder to understand
+
+## Rule Details
+
+This rule disallows the use of `arguments.caller` and `arguments.callee`.
+
+## Examples
+
+### Incorrect Code
+
+```js
+function foo(n) {
+    if (n <= 0) {
+        return;
+    }
+    arguments.callee(n - 1);
+}
+
+[1,2,3,4,5].map(function(n) {
+    return !(n > 1) ? 1 : arguments.callee(n - 1) * n;
+});
+```
+
+### Correct Code
+
+```js
+function foo(n) {
+    if (n <= 0) {
+        return;
+    }
+    foo(n - 1);
+}
+
+[1,2,3,4,5].map(function factorial(n) {
+    return !(n > 1) ? 1 : factorial(n - 1) * n;
+});
+```
+
+## Understanding arguments.callee
+
+### What It Did
+
+`arguments.callee` refers to the currently executing function:
+
+```js
+function factorial(n) {
+    return n <= 1 ? 1 : n * arguments.callee(n - 1);
+}
+```
+
+### Why It's Bad
+
+<Warning>
+accessing arguments.callee prevents inlining and tail call optimization.
+</Warning>
+
+```js
+// Can't be optimized
+const factorial = function(n) {
+    return n <= 1 ? 1 : n * arguments.callee(n - 1);
+};
+
+// Can be optimized
+const factorial = function fact(n) {
+    return n <= 1 ? 1 : n * fact(n - 1);
+};
+```
+
+## Modern Alternatives
+
+### Named Function Expressions
+
+```js
+// Instead of arguments.callee
+const factorial = function(n) {
+    if (n <= 1) return 1;
+    return n * arguments.callee(n - 1);
+};
+
+// Use named function expression
+const factorial = function factorial(n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+};
+
+// Or function declaration
+function factorial(n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+}
+```
+
+### Arrow Functions
+
+```js
+// Can't use arguments.callee anyway (no arguments object)
+const factorial = (n) => n <= 1 ? 1 : n * factorial(n - 1);
+```
+
+### Array Methods
+
+```js
+// Instead of callee in array method
+[1,2,3,4,5].map(function(n) {
+    return !(n > 1) ? 1 : arguments.callee(n - 1) * n;
+});
+
+// Use named function
+[1,2,3,4,5].map(function factorial(n) {
+    return !(n > 1) ? 1 : factorial(n - 1) * n;
+});
+
+// Or define function separately
+function factorial(n) {
+    return !(n > 1) ? 1 : factorial(n - 1) * n;
+}
+[1,2,3,4,5].map(factorial);
+```
+
+## Common Use Cases
+
+### Anonymous Recursion
+
+<Tip>
+If you need recursion in an anonymous function, give it a name!
+</Tip>
+
+```js
+// Wrong
+setTimeout(function() {
+    if (condition) {
+        arguments.callee();
+    }
+}, 1000);
+
+// Right
+setTimeout(function retry() {
+    if (condition) {
+        retry();
+    }
+}, 1000);
+```
+
+### Strict Mode Errors
+
+```js
+'use strict';
+
+function test() {
+    return arguments.callee; // TypeError in strict mode!
+}
+```
+
+### Y Combinator
+
+```js
+// If you really need anonymous recursion (rare)
+const Y = f => (x => f(v => x(x)(v)))(x => f(v => x(x)(v)));
+
+const factorial = Y(f => n => n <= 1 ? 1 : n * f(n - 1));
+```
+
+## Performance Impact
+
+```js
+// Prevents optimization
+function slow(n) {
+    return n <= 0 ? 0 : arguments.callee(n - 1);
+}
+
+// Allows optimization (tail call, inlining)
+function fast(n) {
+    return n <= 0 ? 0 : fast(n - 1);
+}
+```
+
+## Migration Guide
+
+### Step 1: Find Usage
+
+```bash
+grep -r "arguments.callee" src/
+grep -r "arguments.caller" src/
+```
+
+### Step 2: Add Function Names
+
+```js
+// Before
+const fn = function(x) {
+    return x <= 0 ? 0 : arguments.callee(x - 1);
+};
+
+// After
+const fn = function fn(x) {
+    return x <= 0 ? 0 : fn(x - 1);
+};
+```
+
+### Step 3: Test
+
+Ensure recursion still works correctly.
+
+## When Not to Use It
+
+This rule should almost never be disabled:
+- `arguments.callee` is deprecated
+- It's an error in strict mode
+- It prevents optimizations
+
+If you have legacy code that can't be updated, you may need to disable it temporarily.
+
+## Configuration
+
+```js
+{
+  "rules": {
+    "no-caller": "error"
+  }
+}
+```
+
+## Related Rules
+
+- [strict](/rules/strict)
+- [prefer-arrow-callback](/rules/prefer-arrow-callback)

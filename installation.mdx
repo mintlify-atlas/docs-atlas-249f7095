@@ -1,0 +1,802 @@
+---
+title: Installation Guide
+description: Complete installation instructions for ESLint, covering npm, yarn, pnpm, and advanced setup options for TypeScript, React, and more.
+---
+
+# Installation Guide
+
+This guide covers everything you need to know about installing and configuring ESLint for your JavaScript or TypeScript project.
+
+## System Requirements
+
+<CardGroup cols={2}>
+  <Card title="Node.js Version" icon="node-js">
+    **Required**: `^20.19.0`, `^22.13.0`, or `>=24`
+    
+    ESLint requires Node.js built with SSL support (included in all official distributions).
+  </Card>
+  
+  <Card title="Package Manager" icon="box">
+    **Supported**: npm, yarn, pnpm, or bun
+    
+    Any modern JavaScript package manager will work with ESLint.
+  </Card>
+</CardGroup>
+
+<Note>
+  Check your Node.js version: `node --version`
+  
+  If you need to upgrade, visit [nodejs.org](https://nodejs.org/) to download the latest LTS version.
+</Note>
+
+## Quick Installation
+
+The fastest way to get started is with the interactive configuration tool:
+
+```bash
+npm init @eslint/config@latest
+```
+
+This command will:
+1. Guide you through project-specific setup questions
+2. Install ESLint and required dependencies
+3. Create an `eslint.config.js` configuration file
+4. Set up appropriate plugins (React, TypeScript, etc.)
+
+<Tip>
+  The initialization wizard was moved from `eslint --init` to `npm init @eslint/config@latest` in ESLint v10. The old command still works but redirects to the new one.
+</Tip>
+
+## Manual Installation
+
+<Tabs>
+  <Tab title="npm">
+    ### Install ESLint
+    
+    ```bash
+    npm install --save-dev eslint
+    ```
+    
+    ### Install Recommended Config
+    
+    ```bash
+    npm install --save-dev @eslint/js
+    ```
+    
+    ### Create Configuration File
+    
+    Create `eslint.config.js` in your project root:
+    
+    ```js eslint.config.js
+    import { defineConfig } from "eslint/config";
+    import js from "@eslint/js";
+    
+    export default defineConfig([
+      js.configs.recommended,
+      {
+        files: ["**/*.js", "**/*.cjs", "**/*.mjs"],
+        rules: {
+          "prefer-const": "warn",
+          "no-constant-binary-expression": "error",
+        },
+      },
+    ]);
+    ```
+  </Tab>
+  
+  <Tab title="yarn">
+    ### Install ESLint
+    
+    ```bash
+    yarn add --dev eslint
+    ```
+    
+    ### Install Recommended Config
+    
+    ```bash
+    yarn add --dev @eslint/js
+    ```
+    
+    ### Create Configuration File
+    
+    Create `eslint.config.js` in your project root:
+    
+    ```js eslint.config.js
+    import { defineConfig } from "eslint/config";
+    import js from "@eslint/js";
+    
+    export default defineConfig([
+      js.configs.recommended,
+      {
+        files: ["**/*.js", "**/*.cjs", "**/*.mjs"],
+        rules: {
+          "prefer-const": "warn",
+          "no-constant-binary-expression": "error",
+        },
+      },
+    ]);
+    ```
+  </Tab>
+  
+  <Tab title="pnpm">
+    ### Install ESLint
+    
+    ```bash
+    pnpm add --save-dev eslint
+    ```
+    
+    ### Configure pnpm for ESLint
+    
+    <Warning>
+      pnpm requires special configuration for optimal ESLint compatibility.
+    </Warning>
+    
+    Create or update `.npmrc` in your project root:
+    
+    ```text .npmrc
+    auto-install-peers=true
+    node-linker=hoisted
+    ```
+    
+    These settings ensure pnpm:
+    - Automatically installs peer dependencies
+    - Uses a hoisted structure compatible with ESLint's plugin resolution
+    
+    ### Install Recommended Config
+    
+    ```bash
+    pnpm add --save-dev @eslint/js
+    ```
+    
+    ### Create Configuration File
+    
+    Create `eslint.config.js` in your project root:
+    
+    ```js eslint.config.js
+    import { defineConfig } from "eslint/config";
+    import js from "@eslint/js";
+    
+    export default defineConfig([
+      js.configs.recommended,
+      {
+        files: ["**/*.js", "**/*.cjs", "**/*.mjs"],
+        rules: {
+          "prefer-const": "warn",
+          "no-constant-binary-expression": "error",
+        },
+      },
+    ]);
+    ```
+  </Tab>
+  
+  <Tab title="bun">
+    ### Install ESLint
+    
+    ```bash
+    bun add --dev eslint
+    ```
+    
+    ### Install Recommended Config
+    
+    ```bash
+    bun add --dev @eslint/js
+    ```
+    
+    ### Create Configuration File
+    
+    Create `eslint.config.js` in your project root:
+    
+    ```js eslint.config.js
+    import { defineConfig } from "eslint/config";
+    import js from "@eslint/js";
+    
+    export default defineConfig([
+      js.configs.recommended,
+      {
+        files: ["**/*.js", "**/*.cjs", "**/*.mjs"],
+        rules: {
+          "prefer-const": "warn",
+          "no-constant-binary-expression": "error",
+        },
+      },
+    ]);
+    ```
+  </Tab>
+</Tabs>
+
+## Framework-Specific Setup
+
+<AccordionGroup>
+  <Accordion title="TypeScript" icon="typescript">
+    ### Install TypeScript Parser
+    
+    ```bash
+    npm install --save-dev @typescript-eslint/parser @typescript-eslint/eslint-plugin
+    ```
+    
+    ### Configure for TypeScript
+    
+    ```js eslint.config.js
+    import { defineConfig } from "eslint/config";
+    import tsParser from "@typescript-eslint/parser";
+    import tsPlugin from "@typescript-eslint/eslint-plugin";
+    
+    export default defineConfig([
+      {
+        files: ["**/*.ts", "**/*.tsx"],
+        languageOptions: {
+          parser: tsParser,
+          parserOptions: {
+            project: "./tsconfig.json",
+          },
+        },
+        plugins: {
+          "@typescript-eslint": tsPlugin,
+        },
+        rules: {
+          "@typescript-eslint/no-unused-vars": "error",
+          "@typescript-eslint/no-explicit-any": "warn",
+        },
+      },
+    ]);
+    ```
+    
+    <Tip>
+      This setup is based on ESLint's own TypeScript configuration found in `eslint.config.js:331-349`
+    </Tip>
+  </Accordion>
+  
+  <Accordion title="React" icon="react">
+    ### Install React Plugin
+    
+    ```bash
+    npm install --save-dev eslint-plugin-react eslint-plugin-react-hooks
+    ```
+    
+    ### Configure for React
+    
+    ```js eslint.config.js
+    import { defineConfig } from "eslint/config";
+    import js from "@eslint/js";
+    import react from "eslint-plugin-react";
+    import reactHooks from "eslint-plugin-react-hooks";
+    
+    export default defineConfig([
+      js.configs.recommended,
+      {
+        files: ["**/*.jsx", "**/*.tsx"],
+        languageOptions: {
+          parserOptions: {
+            ecmaFeatures: {
+              jsx: true,
+            },
+          },
+        },
+        plugins: {
+          react,
+          "react-hooks": reactHooks,
+        },
+        rules: {
+          "react/jsx-uses-react": "error",
+          "react/jsx-uses-vars": "error",
+          "react-hooks/rules-of-hooks": "error",
+          "react-hooks/exhaustive-deps": "warn",
+        },
+      },
+    ]);
+    ```
+    
+    <Note>
+      ESLint natively supports JSX syntax parsing. The React plugin adds semantic rules specific to React development.
+    </Note>
+  </Accordion>
+  
+  <Accordion title="Vue" icon="vuejs">
+    ### Install Vue Plugin
+    
+    ```bash
+    npm install --save-dev eslint-plugin-vue
+    ```
+    
+    ### Configure for Vue
+    
+    ```js eslint.config.js
+    import { defineConfig } from "eslint/config";
+    import vue from "eslint-plugin-vue";
+    
+    export default defineConfig([
+      ...vue.configs["flat/recommended"],
+      {
+        files: ["**/*.vue"],
+        rules: {
+          "vue/multi-word-component-names": "warn",
+          "vue/no-unused-vars": "error",
+        },
+      },
+    ]);
+    ```
+  </Accordion>
+  
+  <Accordion title="Node.js" icon="node">
+    ### Install Node Plugin
+    
+    ```bash
+    npm install --save-dev eslint-plugin-n
+    ```
+    
+    ### Configure for Node.js
+    
+    ```js eslint.config.js
+    import { defineConfig } from "eslint/config";
+    import js from "@eslint/js";
+    import nodePlugin from "eslint-plugin-n";
+    
+    export default defineConfig([
+      js.configs.recommended,
+      {
+        files: ["**/*.js", "**/*.cjs", "**/*.mjs"],
+        plugins: {
+          n: nodePlugin,
+        },
+        rules: {
+          "n/no-unsupported-features/node-builtins": "error",
+          "n/no-missing-import": "error",
+        },
+      },
+    ]);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Configuration File Formats
+
+ESLint supports multiple configuration file formats. Choose based on your project setup:
+
+<Tabs>
+  <Tab title="ESM (eslint.config.js)">
+    **Recommended for modern projects**
+    
+    ```js eslint.config.js
+    import { defineConfig } from "eslint/config";
+    import js from "@eslint/js";
+    
+    export default defineConfig([
+      js.configs.recommended,
+      {
+        files: ["**/*.js"],
+        rules: {
+          "prefer-const": "warn",
+        },
+      },
+    ]);
+    ```
+    
+    - Uses ES module syntax
+    - Supports top-level `await`
+    - Default for new projects
+  </Tab>
+  
+  <Tab title="CommonJS (eslint.config.cjs)">
+    **For projects using CommonJS**
+    
+    ```js eslint.config.cjs
+    const { defineConfig } = require("eslint/config");
+    const js = require("@eslint/js");
+    
+    module.exports = defineConfig([
+      js.configs.recommended,
+      {
+        files: ["**/*.js"],
+        rules: {
+          "prefer-const": "warn",
+        },
+      },
+    ]);
+    ```
+    
+    - Uses CommonJS `require()` syntax
+    - Ideal for Node.js projects with `"type": "commonjs"` in package.json
+    - This is the format ESLint itself uses (see `eslint.config.js:1-370`)
+  </Tab>
+  
+  <Tab title="ESM (eslint.config.mjs)">
+    **Force ES modules in CommonJS projects**
+    
+    ```js eslint.config.mjs
+    import { defineConfig } from "eslint/config";
+    import js from "@eslint/js";
+    
+    export default defineConfig([
+      js.configs.recommended,
+      {
+        files: ["**/*.js"],
+        rules: {
+          "prefer-const": "warn",
+        },
+      },
+    ]);
+    ```
+    
+    - Forces ES module syntax even if package.json doesn't specify `"type": "module"`
+    - Useful for mixing module systems
+  </Tab>
+</Tabs>
+
+## Understanding the Config Structure
+
+ESLint uses a flat config structure. Here's a breakdown of the key components from the source:
+
+```js eslint.config.js
+import { defineConfig, globalIgnores } from "eslint/config";
+import js from "@eslint/js";
+
+export default defineConfig([
+  // 1. Global ignores - files to never lint
+  globalIgnores([
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    "coverage/**",
+  ]),
+  
+  // 2. Extend recommended rules
+  js.configs.recommended,
+  
+  // 3. File-specific configuration
+  {
+    name: "my-app/javascript",  // Optional: name your config
+    files: ["**/*.js", "**/*.cjs", "**/*.mjs"],
+    languageOptions: {
+      ecmaVersion: "latest",  // Support latest ECMAScript features
+      sourceType: "module",   // Use ES modules
+    },
+    rules: {
+      "prefer-const": "warn",
+      "no-unused-vars": "error",
+    },
+  },
+  
+  // 4. Override for specific directories
+  {
+    files: ["tests/**/*.js"],
+    rules: {
+      "no-unused-expressions": "off",  // Allow in tests
+    },
+  },
+]);
+```
+
+### Key Configuration Options
+
+<CardGroup cols={2}>
+  <Card title="files" icon="file">
+    Glob patterns for which files to lint:
+    
+    ```js
+    files: ["**/*.js", "src/**/*.jsx"]
+    ```
+  </Card>
+  
+  <Card title="ignores" icon="ban">
+    Patterns to exclude from linting:
+    
+    ```js
+    ignores: ["dist/**", "*.min.js"]
+    ```
+  </Card>
+  
+  <Card title="languageOptions" icon="code">
+    Parser and language settings:
+    
+    ```js
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: "module",
+      globals: {
+        window: "readonly",
+      },
+    }
+    ```
+  </Card>
+  
+  <Card title="rules" icon="list-check">
+    Individual rule configuration:
+    
+    ```js
+    rules: {
+      "no-console": "warn",
+      "quotes": ["error", "double"],
+    }
+    ```
+  </Card>
+</CardGroup>
+
+## Recommended Rules Reference
+
+ESLint's recommended configuration includes 74 carefully selected rules. Here are some key ones from `eslint-recommended.js:1-76`:
+
+<Tabs>
+  <Tab title="Problem Detection">
+    Rules that catch actual bugs:
+    
+    | Rule | Description |
+    |------|-------------|
+    | `no-unused-vars` | Disallow unused variables |
+    | `no-undef` | Disallow undefined variables |
+    | `no-unreachable` | Disallow unreachable code after return/throw |
+    | `no-constant-binary-expression` | Disallow constant binary expressions |
+    | `no-dupe-keys` | Disallow duplicate keys in object literals |
+    | `no-dupe-args` | Disallow duplicate function arguments |
+    | `no-func-assign` | Disallow reassigning function declarations |
+    | `no-import-assign` | Disallow reassigning imported bindings |
+  </Tab>
+  
+  <Tab title="Best Practices">
+    Rules that prevent common mistakes:
+    
+    | Rule | Description |
+    |------|-------------|
+    | `no-cond-assign` | Disallow assignment in conditionals |
+    | `no-empty` | Disallow empty block statements |
+    | `no-fallthrough` | Require break in switch cases |
+    | `no-self-assign` | Disallow self assignment |
+    | `use-isnan` | Require isNaN() for NaN checks |
+    | `valid-typeof` | Enforce valid typeof comparisons |
+    | `require-yield` | Require yield in generator functions |
+  </Tab>
+  
+  <Tab title="ES6+ Features">
+    Rules for modern JavaScript:
+    
+    | Rule | Description |
+    |------|-------------|
+    | `constructor-super` | Require super() in constructors |
+    | `no-class-assign` | Disallow reassigning classes |
+    | `no-const-assign` | Disallow reassigning const variables |
+    | `no-dupe-class-members` | Disallow duplicate class members |
+    | `no-this-before-super` | Disallow this before super() |
+  </Tab>
+</Tabs>
+
+## Environment-Specific Setup
+
+<Steps>
+  <Step title="Browser Projects">
+    Configure globals for browser environments:
+    
+    ```bash
+    npm install --save-dev globals
+    ```
+    
+    ```js eslint.config.js
+    import { defineConfig } from "eslint/config";
+    import globals from "globals";
+    
+    export default defineConfig([
+      {
+        languageOptions: {
+          globals: {
+            ...globals.browser,
+          },
+        },
+      },
+    ]);
+    ```
+    
+    This adds globals like `window`, `document`, `localStorage`, etc.
+  </Step>
+  
+  <Step title="Node.js Projects">
+    Configure for Node.js runtime:
+    
+    ```js eslint.config.js
+    import { defineConfig } from "eslint/config";
+    import globals from "globals";
+    
+    export default defineConfig([
+      {
+        languageOptions: {
+          globals: {
+            ...globals.node,
+          },
+        },
+      },
+    ]);
+    ```
+    
+    This adds globals like `process`, `__dirname`, `Buffer`, etc.
+  </Step>
+  
+  <Step title="Test Environments">
+    Configure for testing frameworks:
+    
+    ```js eslint.config.js
+    import { defineConfig } from "eslint/config";
+    import globals from "globals";
+    
+    export default defineConfig([
+      {
+        files: ["tests/**/*.js", "**/*.test.js"],
+        languageOptions: {
+          globals: {
+            ...globals.jest,  // or globals.mocha, globals.vitest
+          },
+        },
+        rules: {
+          "no-unused-expressions": "off",
+        },
+      },
+    ]);
+    ```
+  </Step>
+</Steps>
+
+## Package.json Scripts
+
+Add these scripts to your `package.json` for convenient linting:
+
+```json package.json
+{
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "lint:report": "eslint --format json --output-file eslint-report.json .",
+    "lint:check": "eslint --max-warnings 0 ."
+  }
+}
+```
+
+<Tip>
+  The `--max-warnings 0` flag treats warnings as errors, useful for CI/CD pipelines where you want to enforce zero issues.
+</Tip>
+
+## Verifying Installation
+
+After installation, verify everything is working:
+
+<Steps>
+  <Step title="Check ESLint Version">
+    ```bash
+    npx eslint --version
+    # Should output: v10.0.1 or newer
+    ```
+  </Step>
+  
+  <Step title="Verify Configuration">
+    ```bash
+    npx eslint --print-config src/index.js
+    ```
+    
+    This outputs the resolved configuration for a specific file, useful for debugging.
+  </Step>
+  
+  <Step title="Test on a File">
+    ```bash
+    npx eslint src/
+    ```
+    
+    If no errors appear and ESLint runs without issues, you're all set!
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Module Resolution Errors" icon="exclamation-triangle">
+    **Error**: `Cannot find module 'eslint-plugin-*'`
+    
+    **Solution**: Ensure plugins are installed in the same location as ESLint. With pnpm, make sure your `.npmrc` has `node-linker=hoisted`.
+    
+    ```bash
+    # Reinstall with correct settings
+    pnpm install --shamefully-hoist
+    ```
+  </Accordion>
+  
+  <Accordion title="Config File Not Found" icon="file-slash">
+    **Error**: `ESLint couldn't find a configuration file`
+    
+    **Solution**: ESLint looks for `eslint.config.js`, `eslint.config.mjs`, or `eslint.config.cjs` in the project root. Check:
+    
+    1. File is in the correct location
+    2. File name is spelled correctly
+    3. File exports a valid configuration
+    
+    You can also specify a config explicitly:
+    ```bash
+    npx eslint -c ./path/to/config.js src/
+    ```
+  </Accordion>
+  
+  <Accordion title="Parsing Errors with TypeScript" icon="typescript">
+    **Error**: `Parsing error: Unexpected token`
+    
+    **Solution**: Install the TypeScript parser:
+    
+    ```bash
+    npm install --save-dev @typescript-eslint/parser
+    ```
+    
+    Update your config:
+    ```js
+    import tsParser from "@typescript-eslint/parser";
+    
+    export default [
+      {
+        files: ["**/*.ts"],
+        languageOptions: {
+          parser: tsParser,
+        },
+      },
+    ];
+    ```
+  </Accordion>
+  
+  <Accordion title="Slow Linting Performance" icon="hourglass">
+    **Issue**: ESLint is running slowly on large codebases
+    
+    **Solutions**:
+    
+    1. **Enable caching**:
+    ```bash
+    npx eslint --cache --cache-location .eslintcache .
+    ```
+    
+    2. **Use parallel processing** (ESLint automatically uses available CPU cores):
+    ```bash
+    npx eslint --concurrency auto .
+    ```
+    
+    3. **Ignore unnecessary files**:
+    ```js
+    import { globalIgnores } from "eslint/config";
+    
+    export default [
+      globalIgnores(["node_modules/**", "dist/**", "*.min.js"]),
+    ];
+    ```
+  </Accordion>
+  
+  <Accordion title="Node.js Version Mismatch" icon="node-js">
+    **Error**: `ESLint requires Node.js version ^20.19.0 || ^22.13.0 || >=24`
+    
+    **Solution**: Upgrade Node.js to a supported version:
+    
+    ```bash
+    # Check current version
+    node --version
+    
+    # Download from nodejs.org or use nvm
+    nvm install 22
+    nvm use 22
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configure Rules" icon="sliders" href="https://eslint.org/docs/latest/use/configure/rules">
+    Learn how to customize individual rules for your project
+  </Card>
+  
+  <Card title="Integrations" icon="plug" href="https://eslint.org/docs/latest/use/integrations">
+    Set up ESLint with your editor, build tools, and CI/CD
+  </Card>
+  
+  <Card title="Create Plugins" icon="puzzle-piece" href="https://eslint.org/docs/latest/extend/plugins">
+    Build custom plugins to extend ESLint's functionality
+  </Card>
+  
+  <Card title="Migration Guide" icon="arrows-turn-right" href="https://eslint.org/docs/latest/use/migrate-to-10.0.0">
+    Upgrading from an older ESLint version? Check the migration guide
+  </Card>
+</CardGroup>
+
+## Additional Resources
+
+- **Source Code**: The ESLint installation is defined in `package.json:1-221` with the binary at `bin/eslint.js:1-196`
+- **CLI Options**: Full reference in `lib/options.js:1-150+`
+- **Config API**: Exported from `lib/config-api.js`
+- **GitHub**: [github.com/eslint/eslint](https://github.com/eslint/eslint)
+- **Discord**: [eslint.org/chat](https://eslint.org/chat)

@@ -1,0 +1,435 @@
+---
+title: ESLint Class
+description: Primary Node.js API for linting files and text
+---
+
+The `ESLint` class is the primary interface for integrating ESLint into Node.js applications. It supports flat config and provides high-level methods for linting files, formatting results, and managing configurations.
+
+## Constructor
+
+```javascript
+const { ESLint } = require("eslint");
+const eslint = new ESLint(options);
+```
+
+<ParamField path="options" type="object">
+  Configuration options for the ESLint instance.
+
+  <Expandable title="properties">
+    <ParamField path="allowInlineConfig" type="boolean" default="true">
+      Enable or disable inline configuration comments.
+    </ParamField>
+
+    <ParamField path="baseConfig" type="Config | Config[]">
+      Base config, extended by all configs used with this instance.
+    </ParamField>
+
+    <ParamField path="cache" type="boolean" default="false">
+      Enable result caching to improve performance.
+    </ParamField>
+
+    <ParamField path="cacheLocation" type="string" default=".eslintcache">
+      Path to the cache file.
+    </ParamField>
+
+    <ParamField path="cacheStrategy" type="'metadata' | 'content'" default="metadata">
+      Strategy used to detect changed files.
+    </ParamField>
+
+    <ParamField path="concurrency" type="number | 'auto' | 'off'" default="off">
+      Maximum number of linting threads. Use `"auto"` to choose automatically.
+    </ParamField>
+
+    <ParamField path="cwd" type="string">
+      Current working directory. Defaults to `process.cwd()`.
+    </ParamField>
+
+    <ParamField path="errorOnUnmatchedPattern" type="boolean" default="true">
+      If false, `lintFiles()` doesn't throw when no target files are found.
+    </ParamField>
+
+    <ParamField path="fix" type="boolean | function" default="false">
+      Execute in autofix mode. If a function, should return a boolean.
+    </ParamField>
+
+    <ParamField path="fixTypes" type="string[]">
+      Array of rule types to apply fixes for (e.g., `["problem", "suggestion"]`).
+    </ParamField>
+
+    <ParamField path="flags" type="string[]">
+      Array of feature flags to enable.
+    </ParamField>
+
+    <ParamField path="globInputPaths" type="boolean" default="true">
+      Set to false to skip glob resolution of input file paths.
+    </ParamField>
+
+    <ParamField path="ignore" type="boolean" default="true">
+      False disables all ignore patterns except for the default ones.
+    </ParamField>
+
+    <ParamField path="ignorePatterns" type="string[]">
+      Ignore file patterns in addition to config ignores. Relative to `cwd`.
+    </ParamField>
+
+    <ParamField path="overrideConfig" type="Config | Config[]">
+      Override config, overrides all configs used with this instance.
+    </ParamField>
+
+    <ParamField path="overrideConfigFile" type="boolean | string">
+      Config file path, or `true` to disable config file lookup.
+    </ParamField>
+
+    <ParamField path="passOnNoPatterns" type="boolean" default="false">
+      When true, missing patterns don't cause the operation to fail.
+    </ParamField>
+
+    <ParamField path="plugins" type="Record<string, Plugin>">
+      Preloaded plugins to use.
+    </ParamField>
+
+    <ParamField path="stats" type="boolean" default="false">
+      Enable statistics collection on lint results.
+    </ParamField>
+
+    <ParamField path="warnIgnored" type="boolean" default="false">
+      Show warnings when the file list includes ignored files.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Static Properties
+
+### ESLint.version
+
+```javascript
+const version = ESLint.version;
+```
+
+<ResponseField name="version" type="string">
+  The ESLint version string (e.g., "9.0.0").
+</ResponseField>
+
+### ESLint.configType
+
+```javascript
+const configType = ESLint.configType; // "flat"
+```
+
+<ResponseField name="configType" type="string">
+  The type of configuration used by this class. Always returns `"flat"`.
+</ResponseField>
+
+### ESLint.defaultConfig
+
+```javascript
+const defaultConfig = ESLint.defaultConfig;
+```
+
+<ResponseField name="defaultConfig" type="FlatConfigArray">
+  The default configuration that ESLint uses internally.
+</ResponseField>
+
+## Instance Methods
+
+### lintFiles()
+
+Lints files matching the given patterns.
+
+```javascript
+const results = await eslint.lintFiles(patterns);
+```
+
+<ParamField path="patterns" type="string | string[]" required>
+  File patterns to lint. Can be file paths, directory paths, or glob patterns.
+</ParamField>
+
+<ResponseField name="results" type="LintResult[]">
+  Array of linting results for each file.
+
+  <Expandable title="LintResult properties">
+    <ResponseField name="filePath" type="string">
+      The absolute path to the file.
+    </ResponseField>
+
+    <ResponseField name="messages" type="LintMessage[]">
+      Array of lint messages.
+    </ResponseField>
+
+    <ResponseField name="suppressedMessages" type="SuppressedLintMessage[]">
+      Array of suppressed lint messages.
+    </ResponseField>
+
+    <ResponseField name="errorCount" type="number">
+      Number of errors.
+    </ResponseField>
+
+    <ResponseField name="warningCount" type="number">
+      Number of warnings.
+    </ResponseField>
+
+    <ResponseField name="fixableErrorCount" type="number">
+      Number of fixable errors.
+    </ResponseField>
+
+    <ResponseField name="fixableWarningCount" type="number">
+      Number of fixable warnings.
+    </ResponseField>
+
+    <ResponseField name="output" type="string" optional>
+      The fixed code (only present if fixes were applied).
+    </ResponseField>
+
+    <ResponseField name="usedDeprecatedRules" type="DeprecatedRuleInfo[]">
+      Information about deprecated rules used.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### lintText()
+
+Lints the provided source code text.
+
+```javascript
+const results = await eslint.lintText(code, options);
+```
+
+<ParamField path="code" type="string" required>
+  The source code to lint.
+</ParamField>
+
+<ParamField path="options" type="object">
+  <Expandable title="properties">
+    <ParamField path="filePath" type="string">
+      The path to the file. Used for configuration matching.
+    </ParamField>
+
+    <ParamField path="warnIgnored" type="boolean">
+      When true, warns if the filePath is ignored.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="results" type="LintResult[]">
+  Array containing a single linting result.
+</ResponseField>
+
+### loadFormatter()
+
+Loads a formatter to format lint results.
+
+```javascript
+const formatter = await eslint.loadFormatter(name);
+const formatted = formatter.format(results, resultsMeta);
+```
+
+<ParamField path="name" type="string" default="stylish">
+  Name of the formatter. Can be:
+  - A built-in formatter name (e.g., `"stylish"`, `"json"`)
+  - A third-party formatter (e.g., `"eslint-formatter-pretty"`)
+  - A file path to a custom formatter
+</ParamField>
+
+<ResponseField name="formatter" type="object">
+  <Expandable title="properties">
+    <ResponseField name="format" type="function">
+      Function that formats results: `(results, resultsMeta) => string`
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### calculateConfigForFile()
+
+Calculates the configuration for a given file.
+
+```javascript
+const config = await eslint.calculateConfigForFile(filePath);
+```
+
+<ParamField path="filePath" type="string" required>
+  The path to the file.
+</ParamField>
+
+<ResponseField name="config" type="object | undefined">
+  The calculated configuration object, or `undefined` if no configuration applies.
+</ResponseField>
+
+### findConfigFile()
+
+Finds the config file being used.
+
+```javascript
+const configPath = await eslint.findConfigFile(filePath);
+```
+
+<ParamField path="filePath" type="string" optional>
+  The path to find the config file for. Defaults to `cwd`.
+</ParamField>
+
+<ResponseField name="configPath" type="string | undefined">
+  The path to the config file, or `undefined` if not found.
+</ResponseField>
+
+### isPathIgnored()
+
+Checks if a path is ignored by ESLint.
+
+```javascript
+const ignored = await eslint.isPathIgnored(filePath);
+```
+
+<ParamField path="filePath" type="string" required>
+  The path to check.
+</ParamField>
+
+<ResponseField name="ignored" type="boolean">
+  `true` if the path is ignored, `false` otherwise.
+</ResponseField>
+
+### getRulesMetaForResults()
+
+Returns metadata for rules used in the results.
+
+```javascript
+const rulesMeta = eslint.getRulesMetaForResults(results);
+```
+
+<ParamField path="results" type="LintResult[]" required>
+  The lint results to get metadata for.
+</ParamField>
+
+<ResponseField name="rulesMeta" type="Record<string, RulesMeta>">
+  Object mapping rule IDs to their metadata.
+</ResponseField>
+
+### hasFlag()
+
+Checks if a feature flag is enabled.
+
+```javascript
+const enabled = eslint.hasFlag(flag);
+```
+
+<ParamField path="flag" type="string" required>
+  The feature flag name to check.
+</ParamField>
+
+<ResponseField name="enabled" type="boolean">
+  `true` if the flag is enabled, `false` otherwise.
+</ResponseField>
+
+## Static Methods
+
+### ESLint.outputFixes()
+
+Writes fixes to files.
+
+```javascript
+await ESLint.outputFixes(results);
+```
+
+<ParamField path="results" type="LintResult[]" required>
+  The lint results containing fixes to apply.
+</ParamField>
+
+### ESLint.getErrorResults()
+
+Filters results to only include errors.
+
+```javascript
+const errorResults = ESLint.getErrorResults(results);
+```
+
+<ParamField path="results" type="LintResult[]" required>
+  The lint results to filter.
+</ParamField>
+
+<ResponseField name="errorResults" type="LintResult[]">
+  Results containing only error messages.
+</ResponseField>
+
+### ESLint.fromOptionsModule()
+
+Creates an ESLint instance from an options module URL.
+
+```javascript
+const eslint = await ESLint.fromOptionsModule(optionsURL);
+```
+
+<ParamField path="optionsURL" type="URL" required>
+  URL to a module that exports ESLint options.
+</ParamField>
+
+<ResponseField name="eslint" type="ESLint">
+  A new ESLint instance.
+</ResponseField>
+
+## Examples
+
+<Tabs>
+  <Tab title="Basic Linting">
+    ```javascript
+    const { ESLint } = require("eslint");
+
+    async function main() {
+      const eslint = new ESLint();
+      const results = await eslint.lintFiles(["src/**/*.js"]);
+      
+      const formatter = await eslint.loadFormatter("stylish");
+      const resultText = formatter.format(results);
+      console.log(resultText);
+    }
+
+    main();
+    ```
+  </Tab>
+  <Tab title="Autofix">
+    ```javascript
+    const { ESLint } = require("eslint");
+
+    async function fixFiles() {
+      const eslint = new ESLint({ fix: true });
+      const results = await eslint.lintFiles(["src/**/*.js"]);
+      
+      await ESLint.outputFixes(results);
+      
+      const hasErrors = results.some(
+        result => result.errorCount > 0
+      );
+      
+      if (hasErrors) {
+        const formatter = await eslint.loadFormatter("stylish");
+        console.log(formatter.format(results));
+        process.exit(1);
+      }
+    }
+
+    fixFiles();
+    ```
+  </Tab>
+  <Tab title="Lint Text">
+    ```javascript
+    const { ESLint } = require("eslint");
+
+    async function lintCode() {
+      const eslint = new ESLint({
+        overrideConfig: {
+          rules: {
+            "no-console": "error",
+            "no-var": "error"
+          }
+        }
+      });
+      
+      const code = "var x = 1; console.log(x);";
+      const results = await eslint.lintText(code, {
+        filePath: "example.js"
+      });
+      
+      console.log(results[0].messages);
+    }
+
+    lintCode();
+    ```
+  </Tab>
+</Tabs>

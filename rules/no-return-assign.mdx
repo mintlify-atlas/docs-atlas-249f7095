@@ -1,0 +1,293 @@
+---
+title: no-return-assign
+description: Disallow assignment operators in return statements
+---
+
+# no-return-assign
+
+Assignment in return statements can be confusing - it's often unclear whether the developer meant to return the assignment or use a comparison operator.
+
+<Note>
+**Rule Type:** Suggestion  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+Code like this is ambiguous:
+
+```js
+function doSomething() {
+    return foo = bar + 2;
+}
+```
+
+Did the developer mean:
+- Return the result of `bar + 2` (and assign it to `foo`)?
+- Use `==` for comparison instead of `=`?
+
+## Rule Details
+
+This rule disallows assignments in `return` statements.
+
+## Options
+
+### `"except-parens"` (default)
+
+Disallow assignments unless enclosed in parentheses.
+
+**Incorrect:**
+
+```js
+function doSomething() {
+    return foo = bar + 2;
+}
+
+function doSomethingElse() {
+    return foo += 2;
+}
+
+const foo = (a, b) => a = b;
+
+const bar = (a, b, c) => (a = b, c == b);
+
+function doSomethingMore() {
+    return foo = bar && foo > 0;
+}
+```
+
+**Correct:**
+
+```js
+function doSomething() {
+    return foo == bar + 2;
+}
+
+function doSomethingElse() {
+    return foo === bar + 2;
+}
+
+function doSomethingMore() {
+    return (foo = bar + 2);
+}
+
+const foo = (a, b) => (a = b);
+
+const bar = (a, b, c) => ((a = b), c == b);
+
+function doAnotherThing() {
+    return (foo = bar) && foo > 0;
+}
+```
+
+### `"always"`
+
+Disallow all assignments in return statements, even with parentheses.
+
+**Incorrect:**
+
+```js
+function doSomething() {
+    return foo = bar + 2;
+}
+
+function doSomethingElse() {
+    return foo += 2;
+}
+
+function doSomethingMore() {
+    return (foo = bar + 2);
+}
+```
+
+**Correct:**
+
+```js
+function doSomething() {
+    return foo == bar + 2;
+}
+
+function doSomethingElse() {
+    return foo === bar + 2;
+}
+```
+
+## Examples
+
+### Common Mistake: = vs ==
+
+<Warning>
+The most common bug is using `=` when you meant `==` or `===`.
+</Warning>
+
+```js
+// Bug: Assignment instead of comparison
+function isAdult(age) {
+    return age = 18; // Always returns 18!
+}
+
+// Fixed: Comparison
+function isAdult(age) {
+    return age >= 18;
+}
+```
+
+### Intentional Assignment
+
+```js
+// Confusing: Returns and assigns
+function getAndCache(id) {
+    return cache[id] = fetchData(id);
+}
+
+// Clearer: Separate operations
+function getAndCache(id) {
+    const data = fetchData(id);
+    cache[id] = data;
+    return data;
+}
+
+// Or with parentheses if you insist
+function getAndCache(id) {
+    return (cache[id] = fetchData(id));
+}
+```
+
+## Common Patterns
+
+### Caching Pattern
+
+```js
+// Confusing
+function getUser(id) {
+    return userCache[id] = fetchUser(id);
+}
+
+// Better
+function getUser(id) {
+    if (!userCache[id]) {
+        userCache[id] = fetchUser(id);
+    }
+    return userCache[id];
+}
+
+// Or memoization
+const getUser = memoize(id => fetchUser(id));
+```
+
+### Conditional Assignment
+
+```js
+// Confusing
+function process(value) {
+    return result = value > 10 ? 'big' : 'small';
+}
+
+// Clearer
+function process(value) {
+    const result = value > 10 ? 'big' : 'small';
+    return result;
+}
+
+// Or just return directly
+function process(value) {
+    return value > 10 ? 'big' : 'small';
+}
+```
+
+### Chained Assignment
+
+```js
+// Wrong
+function setAndReturn(val) {
+    return x = y = val;
+}
+
+// Right
+function setAndReturn(val) {
+    x = val;
+    y = val;
+    return val;
+}
+```
+
+## Configuration Examples
+
+```js
+// Default: Allow with parentheses
+{
+  "rules": {
+    "no-return-assign": "error"
+  }
+}
+
+// Explicit default
+{
+  "rules": {
+    "no-return-assign": ["error", "except-parens"]
+  }
+}
+
+// Always disallow
+{
+  "rules": {
+    "no-return-assign": ["error", "always"]
+  }
+}
+```
+
+## When Not to Use It
+
+Disable this rule if you:
+- Commonly use assignment in return statements
+- Have a team convention that accepts this pattern
+- Use parentheses to make intent clear
+
+However, for most teams, this rule helps prevent bugs and improves clarity.
+
+## Best Practices
+
+### Separate Concerns
+
+<Tip>
+Separate assignment from return for better readability.
+</Tip>
+
+```js
+// Compact but unclear
+return state = newState;
+
+// Verbose but clear
+state = newState;
+return state;
+```
+
+### Use Descriptive Variables
+
+```js
+// Less clear
+return (result = calculateValue());
+
+// More clear
+const result = calculateValue();
+return result;
+```
+
+### Consider Immutability
+
+```js
+// Mutating and returning
+function addItem(array, item) {
+    return array[array.length] = item;
+}
+
+// Immutable approach
+function addItem(array, item) {
+    return [...array, item];
+}
+```
+
+## Related Rules
+
+- [no-cond-assign](/rules/no-cond-assign)
+- [no-return-await](/rules/no-return-await)

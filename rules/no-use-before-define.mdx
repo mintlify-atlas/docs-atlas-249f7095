@@ -1,0 +1,331 @@
+---
+title: no-use-before-define
+description: Disallow the use of variables before they are defined
+---
+
+# no-use-before-define
+
+In JavaScript, variables and functions can be used before they're declared due to hoisting. This rule enforces that variables are declared before use.
+
+<Note>
+**Rule Type:** Problem  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+Using variables before declaration can be confusing. ES6 `let` and `const` even throw `ReferenceError` when accessed before declaration (temporal dead zone).
+
+```js
+alert(a); // Works due to hoisting, but confusing
+var a = 10;
+
+alert(b); // ReferenceError: temporal dead zone
+let b = 20;
+```
+
+## Rule Details
+
+This rule warns when it encounters references to identifiers that haven't been declared yet.
+
+## Examples
+
+### Incorrect Code
+
+```js
+// Using var before declaration
+alert(a);
+var a = 10;
+
+// Calling function before declaration
+f();
+function f() {}
+
+// Referencing in function before declaration
+function g() {
+    return b;
+}
+var b = 1;
+
+// let/const temporal dead zone
+{
+    alert(c);
+    let c = 1;
+}
+
+// Class extending itself
+{
+    class C extends C {}
+}
+
+// Class static field referencing class
+{
+    class C {
+        static x = "foo";
+        [C.x]() {}
+    }
+}
+
+// Export before definition
+export { foo };
+const foo = 1;
+```
+
+### Correct Code
+
+```js
+// Declare before use
+var a;
+a = 10;
+alert(a);
+
+// Function declaration before call
+function f() {}
+f(1);
+
+// Variable declared before function uses it
+var b = 1;
+function g() {
+    return b;
+}
+
+// let/const declared before use
+{
+    let c;
+    c++;
+}
+
+// Class can reference itself in static initializer
+{
+    class C {
+        static x = C;
+    }
+}
+
+// Definition before export
+const foo = 1;
+export { foo };
+```
+
+## Options
+
+This rule has detailed options for controlling what it checks:
+
+```json
+{
+    "no-use-before-define": ["error", {
+        "functions": true,
+        "classes": true,
+        "variables": true,
+        "allowNamedExports": false,
+        "enums": true,
+        "typedefs": true,
+        "ignoreTypeReferences": true
+    }]
+}
+```
+
+### `functions`
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Check function declarations. When `false`, allows calling functions before they're declared.
+
+```js
+// With { "functions": false }
+f(); // OK
+function f() {}
+```
+
+<Tip>
+Function declarations are hoisted, so it's safe to set this to `false`. However, leaving it `true` enforces a clearer code style.
+</Tip>
+
+### `classes`
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Check class declarations. When `false`, allows referencing classes before declaration in upper scopes.
+
+```js
+// With { "classes": false }
+function foo() {
+    return new A(); // OK if A is declared later
+}
+class A {}
+```
+
+<Warning>
+Classes are NOT hoisted. Setting `classes: false` can be dangerous.
+</Warning>
+
+### `variables`
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Check variable declarations. When `false`, ignores references from upper scopes.
+
+```js
+// With { "variables": false }
+function baz() {
+    console.log(foo); // OK if foo declared later in outer scope
+}
+var foo = 1;
+```
+
+### `allowNamedExports`
+
+**Type:** `boolean`  
+**Default:** `false`
+
+When `true`, allows references in `export {}` declarations (they're safe even if declared later).
+
+```js
+// With { "allowNamedExports": true }
+export { a, b, f, C }; // OK
+
+const a = 1;
+let b;
+function f() {}
+class C {}
+```
+
+### TypeScript Options
+
+#### `enums`
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Check TypeScript enum references.
+
+```ts
+// With { "enums": true } - INCORRECT
+const x = Foo.FOO;
+enum Foo {
+  FOO,
+}
+
+// CORRECT
+enum Foo {
+  FOO,
+}
+const x = Foo.FOO;
+```
+
+#### `typedefs`
+
+**Type:** `boolean`  
+**Default:** `true`
+
+Check TypeScript type alias and interface references.
+
+```ts
+// With { "typedefs": true } - INCORRECT  
+let myVar: StringOrNumber;
+type StringOrNumber = string | number;
+
+// CORRECT
+type StringOrNumber = string | number;
+let myVar: StringOrNumber;
+```
+
+#### `ignoreTypeReferences`
+
+**Type:** `boolean`  
+**Default:** `true`
+
+When `true`, ignores all type references (in type annotations, assertions, etc.).
+
+```ts
+// With { "ignoreTypeReferences": true } - OK
+let var1: StringOrNumber; // Type reference ignored
+type StringOrNumber = string | number;
+```
+
+### `"nofunc"` Shorthand
+
+Shorthand for `{ "functions": false, "classes": true, "variables": true }`:
+
+```js
+{
+  "no-use-before-define": ["error", "nofunc"]
+}
+```
+
+## Common Patterns
+
+### Mutual Recursion
+
+```js
+// With { "functions": true } - can't do mutual recursion
+function isOdd(n) {
+    if (n === 0) return false;
+    return isEven(n - 1); // Error: isEven not defined yet
+}
+function isEven(n) {
+    if (n === 0) return true;
+    return isOdd(n - 1);
+}
+
+// Solution: Set functions: false
+// Or restructure to declare both first:
+const isOdd = function(n) {
+    if (n === 0) return false;
+    return isEven(n - 1);
+};
+const isEven = function(n) {
+    if (n === 0) return true;
+    return isOdd(n - 1);
+};
+```
+
+### Temporal Dead Zone
+
+```js
+// This throws ReferenceError, rule helps catch it
+{
+    console.log(x); // TDZ - error at runtime!
+    let x = 5;
+}
+
+// Rule prevents this mistake
+{
+    let x = 5;
+    console.log(x); // Safe
+}
+```
+
+### Export Patterns
+
+```js
+// With allowNamedExports: false - INCORRECT
+export { foo };
+const foo = 1;
+
+// CORRECT
+const foo = 1;
+export { foo };
+
+// Or use default export
+export default foo; // Must be after declaration
+```
+
+## When Not to Use It
+
+Disable this rule if:
+
+1. You're comfortable with hoisting and temporal dead zones
+2. Your codebase heavily uses forward references
+3. You need mutual recursion with function declarations
+
+For most projects, this rule helps catch bugs and improves code clarity.
+
+## Related Rules
+
+- [no-undef](/rules/no-undef)
+- [no-redeclare](/rules/no-redeclare)
+- [block-scoped-var](/rules/block-scoped-var)

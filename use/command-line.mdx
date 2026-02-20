@@ -1,0 +1,577 @@
+---
+title: Command Line Interface
+description: Learn how to use ESLint from the command line with all available options and flags
+---
+
+# Command Line Interface
+
+The ESLint Command Line Interface (CLI) lets you execute linting from the terminal. The CLI has a variety of options that you can pass to configure ESLint.
+
+## Basic Usage
+
+ESLint requires Node.js for installation. Most users use `npx` to run ESLint on the command line:
+
+```bash
+npx eslint [options] [file|dir|glob]*
+```
+
+<CodeGroup>
+```bash Run on two files
+npx eslint file1.js file2.js
+```
+
+```bash Run on directory
+npx eslint lib/**
+```
+
+```bash Run with config
+npx eslint -c my.config.js src/
+```
+</CodeGroup>
+
+<Note>
+When passing a glob as a parameter, it is expanded by your shell. Quote your parameter if you need it to run in Windows: `npx eslint "lib/**"`
+</Note>
+
+## CLI Options Reference
+
+### Basic Configuration
+
+<AccordionGroup>
+<Accordion title="--config, -c" icon="gear">
+
+Use a specific configuration file instead of the default `eslint.config.js`.
+
+```bash
+npx eslint -c ~/my.eslint.config.js file.js
+```
+
+**Type:** String (path to file)
+
+</Accordion>
+
+<Accordion title="--no-config-lookup" icon="ban">
+
+Disables automatic lookup for `eslint.config.js` files.
+
+```bash
+npx eslint --no-config-lookup file.js
+```
+
+</Accordion>
+
+<Accordion title="--inspect-config" icon="magnifying-glass">
+
+Opens the config inspector to visualize your configuration.
+
+```bash
+npx eslint --inspect-config
+```
+
+This runs `@eslint/config-inspector` to help you understand what your configuration is doing.
+
+</Accordion>
+
+<Accordion title="--ext" icon="file">
+
+Specify additional file extensions to lint beyond the default `.js`, `.mjs`, and `.cjs`.
+
+```bash
+npx eslint . --ext .ts
+npx eslint . --ext .ts --ext .tsx
+npx eslint . --ext .ts,.tsx
+```
+
+**Type:** String or Array
+**Default:** `.js`, `.mjs`, `.cjs`
+
+</Accordion>
+
+<Accordion title="--global" icon="globe">
+
+Define global variables so they are not flagged as undefined by the `no-undef` rule.
+
+```bash
+npx eslint --global require,exports:true file.js
+npx eslint --global require --global exports:true
+```
+
+Append `:true` to a variable name to allow writes to that global.
+
+</Accordion>
+
+<Accordion title="--parser" icon="code">
+
+Specify the parser to be used by ESLint.
+
+```bash
+npx eslint --parser @typescript-eslint/parser file.ts
+```
+
+**Default:** `espree`
+
+</Accordion>
+
+<Accordion title="--parser-options" icon="sliders">
+
+Specify parser options as key-value pairs.
+
+```bash
+echo '3 ** 4' | npx eslint --stdin --parser-options ecmaVersion:7
+```
+
+**Format:** `key:value` pairs
+
+</Accordion>
+</AccordionGroup>
+
+### Rules and Plugins
+
+<AccordionGroup>
+<Accordion title="--plugin" icon="puzzle-piece">
+
+Specify plugins to load. You can optionally omit the `eslint-plugin-` prefix.
+
+```bash
+npx eslint --plugin jquery file.js
+npx eslint --plugin eslint-plugin-mocha file.js
+```
+
+<Warning>
+You must install the plugin using npm before using this option.
+</Warning>
+
+</Accordion>
+
+<Accordion title="--rule" icon="ruler">
+
+Specify rules to be used. These are merged with configuration file rules.
+
+```bash
+npx eslint --rule 'quotes: [error, double]' file.js
+npx eslint --rule 'guard-for-in: error' --rule 'brace-style: [error, 1tbs]' file.js
+npx eslint --rule 'jquery/dollar-sign: error' file.js
+```
+
+**Format:** Uses [levn](https://github.com/gkz/levn#levn--) format
+
+<Tip>
+Combine with `--no-config-lookup` to only apply command line rules.
+</Tip>
+
+</Accordion>
+</AccordionGroup>
+
+### Fix Problems
+
+<AccordionGroup>
+<Accordion title="--fix" icon="wrench">
+
+Automatically fix problems. Fixes are made to the actual files.
+
+```bash
+npx eslint --fix file.js
+```
+
+<Warning>
+- This option throws an error when code is piped to ESLint
+- Not all problems are fixable
+- Has no effect on code that uses a processor (unless the processor opts in)
+</Warning>
+
+</Accordion>
+
+<Accordion title="--fix-dry-run" icon="flask">
+
+Fix problems without saving changes to the file system.
+
+```bash
+getSomeText | npx eslint --stdin --fix-dry-run --format json
+```
+
+Useful for editor integrations that need to autofix text without saving.
+
+</Accordion>
+
+<Accordion title="--fix-type" icon="filter">
+
+Specify the types of fixes to apply.
+
+```bash
+npx eslint --fix --fix-type suggestion .
+npx eslint --fix --fix-type suggestion --fix-type problem .
+npx eslint --fix --fix-type suggestion,layout .
+```
+
+**Options:**
+- `problem` - fix potential errors in the code
+- `suggestion` - apply fixes that improve code
+- `layout` - apply fixes that don't change the AST
+- `directive` - apply fixes to inline directives
+
+</Accordion>
+</AccordionGroup>
+
+### Ignore Files
+
+<AccordionGroup>
+<Accordion title="--no-ignore" icon="eye">
+
+Disables excluding files from `--ignore-pattern` and the `ignores` configuration property.
+
+```bash
+npx eslint --no-ignore file.js
+```
+
+</Accordion>
+
+<Accordion title="--ignore-pattern" icon="ban">
+
+Specify patterns of files to ignore (uses minimatch syntax).
+
+```bash
+npx eslint --ignore-pattern "/lib/" --ignore-pattern "/src/vendor/*" .
+```
+
+<Note>
+Quote your patterns to avoid shell interpretation of glob patterns.
+</Note>
+
+</Accordion>
+</AccordionGroup>
+
+### Input/Output
+
+<AccordionGroup>
+<Accordion title="--stdin" icon="terminal">
+
+Lint code provided on STDIN instead of from files.
+
+```bash
+cat myFile.js | npx eslint --stdin
+```
+
+</Accordion>
+
+<Accordion title="--stdin-filename" icon="file-signature">
+
+Specify a filename to process STDIN as.
+
+```bash
+cat myFile.js | npx eslint --stdin --stdin-filename myfile.js
+```
+
+Useful when processing files from STDIN and you have rules that depend on the filename.
+
+</Accordion>
+
+<Accordion title="--output-file, -o" icon="file-export">
+
+Write the output to a specified file.
+
+```bash
+npx eslint -o ./test/test.html
+```
+
+</Accordion>
+
+<Accordion title="--format, -f" icon="paint-brush">
+
+Specify the output format for the console.
+
+```bash
+npx eslint --format json file.js
+npx eslint -f ./customformat.js file.js
+npx eslint -f pretty file.js
+```
+
+**Built-in formatters:**
+- `stylish` (default)
+- `json`
+- `json-with-metadata`
+- `html`
+
+</Accordion>
+
+<Accordion title="--color / --no-color" icon="palette">
+
+Force enabling or disabling of colorized output.
+
+```bash
+npx eslint --color file.js | cat
+npx eslint --no-color file.js
+```
+
+</Accordion>
+</AccordionGroup>
+
+### Handle Warnings
+
+<AccordionGroup>
+<Accordion title="--quiet" icon="volume-mute">
+
+Report errors only - disables reporting on warnings.
+
+```bash
+npx eslint --quiet file.js
+```
+
+Only rules set to `error` will be run; rules set to `warn` are disabled.
+
+</Accordion>
+
+<Accordion title="--max-warnings" icon="triangle-exclamation">
+
+Specify a warning threshold to force ESLint to exit with an error status.
+
+```bash
+npx eslint --max-warnings 10 file.js
+```
+
+**Type:** Integer
+**Default:** `-1` (unlimited)
+
+<Info>
+When used with `--quiet`, rules marked as warn still run but are not reported.
+</Info>
+
+</Accordion>
+</AccordionGroup>
+
+### Caching
+
+<AccordionGroup>
+<Accordion title="--cache" icon="database">
+
+Only check changed files. Dramatically improves performance by storing info about processed files.
+
+```bash
+npx eslint --cache file.js
+```
+
+**Default cache location:** `.eslintcache`
+
+<Tip>
+Autofixed files are not placed in the cache. Subsequent linting that doesn't trigger an autofix will place it in the cache.
+</Tip>
+
+</Accordion>
+
+<Accordion title="--cache-location" icon="folder">
+
+Specify the path to the cache file or directory.
+
+```bash
+npx eslint "src/**/*.js" --cache --cache-location "/Users/user/.eslintcache/"
+```
+
+<Note>
+Add a trailing `/` on *nix systems or `\` on Windows if specifying a directory.
+</Note>
+
+</Accordion>
+
+<Accordion title="--cache-strategy" icon="diagram-project">
+
+Strategy for detecting changed files in the cache.
+
+```bash
+npx eslint "src/**/*.js" --cache --cache-strategy content
+```
+
+**Options:**
+- `metadata` (default) - uses file modification time
+- `content` - uses file content hash
+
+<Tip>
+Use `content` strategy for git operations where modification time changes but content doesn't.
+</Tip>
+
+</Accordion>
+</AccordionGroup>
+
+### Miscellaneous
+
+<AccordionGroup>
+<Accordion title="--init" icon="wand-magic-sparkles">
+
+Run config initialization wizard.
+
+```bash
+npx eslint --init
+```
+
+Runs `npm init @eslint/config` to help create an `eslint.config.js` file.
+
+</Accordion>
+
+<Accordion title="--debug" icon="bug">
+
+Output debugging information to the console.
+
+```bash
+npx eslint --debug test.js
+```
+
+Useful when you're seeing a problem and having a hard time pinpointing it.
+
+</Accordion>
+
+<Accordion title="--help, -h" icon="circle-question">
+
+Output the help menu.
+
+```bash
+npx eslint --help
+```
+
+</Accordion>
+
+<Accordion title="--version, -v" icon="tag">
+
+Output the current ESLint version.
+
+```bash
+npx eslint --version
+```
+
+</Accordion>
+
+<Accordion title="--print-config" icon="print">
+
+Output the configuration to be used for a file.
+
+```bash
+npx eslint --print-config file.js
+```
+
+No linting is performed when this flag is present.
+
+</Accordion>
+
+<Accordion title="--stats" icon="chart-line">
+
+Add detailed performance statistics to the lint results.
+
+```bash
+npx eslint --stats --format json file.js
+```
+
+Includes parse, fix, and lint times per rule.
+
+</Accordion>
+
+<Accordion title="--env-info" icon="info-circle">
+
+Output execution environment information.
+
+```bash
+npx eslint --env-info
+```
+
+Displays Node.js, npm, and ESLint version information.
+
+</Accordion>
+
+<Accordion title="--concurrency" icon="gears">
+
+Control the number of worker threads used to lint files.
+
+```bash
+npx eslint --concurrency auto
+npx eslint --concurrency 4
+```
+
+**Options:**
+- `off` (default) - lint in main thread
+- `auto` - determine best setting automatically
+- `<number>` - specific number of threads
+
+</Accordion>
+</AccordionGroup>
+
+## Exit Codes
+
+When linting files, ESLint exits with one of the following exit codes:
+
+<CardGroup cols={3}>
+  <Card title="Exit Code 0" icon="circle-check" color="#10b981">
+    Linting successful with no errors. Warnings are at most equal to `--max-warnings` value.
+  </Card>
+  <Card title="Exit Code 1" icon="circle-xmark" color="#f59e0b">
+    Linting successful but at least one error found, or warnings exceed `--max-warnings`.
+  </Card>
+  <Card title="Exit Code 2" icon="circle-exclamation" color="#ef4444">
+    Linting unsuccessful due to configuration problem or internal error.
+  </Card>
+</CardGroup>
+
+## Examples
+
+<Tabs>
+  <Tab title="Basic">
+    ```bash
+    # Lint all JavaScript files in the current directory
+    npx eslint .
+    
+    # Lint specific files
+    npx eslint file1.js file2.js
+    
+    # Lint with a specific config
+    npx eslint -c my-config.js src/
+    ```
+  </Tab>
+  <Tab title="With Fixing">
+    ```bash
+    # Auto-fix all fixable issues
+    npx eslint --fix .
+    
+    # Fix only specific types
+    npx eslint --fix --fix-type suggestion src/
+    
+    # Dry run to see what would be fixed
+    npx eslint --fix-dry-run --format json src/
+    ```
+  </Tab>
+  <Tab title="Performance">
+    ```bash
+    # Use caching for faster linting
+    npx eslint --cache src/
+    
+    # Use content-based caching
+    npx eslint --cache --cache-strategy content src/
+    
+    # Enable multithreading
+    npx eslint --concurrency auto src/
+    ```
+  </Tab>
+  <Tab title="CI/CD">
+    ```bash
+    # Fail on any warnings
+    npx eslint --max-warnings 0 src/
+    
+    # Only report errors
+    npx eslint --quiet src/
+    
+    # Output JSON for processing
+    npx eslint --format json --output-file results.json src/
+    ```
+  </Tab>
+</Tabs>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="./configuration">
+    Learn how to configure ESLint using eslint.config.js
+  </Card>
+  <Card title="Formatters" icon="paint-brush" href="./formatters">
+    Explore different output format options
+  </Card>
+  <Card title="Ignoring Code" icon="ban" href="./ignoring-code">
+    Learn how to ignore files and patterns
+  </Card>
+  <Card title="Core Concepts" icon="book" href="./core-concepts">
+    Understand ESLint fundamentals
+  </Card>
+</CardGroup>

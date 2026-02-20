@@ -1,0 +1,846 @@
+---
+title: Shareable Configurations
+description: Create and publish shareable ESLint configurations to standardize linting across projects
+---
+
+# Shareable Configurations
+
+Shareable configs allow you to package and distribute ESLint configurations across multiple projects. They're perfect for enforcing team standards, company-wide rules, or community best practices.
+
+## What is a Shareable Config?
+
+A shareable config is an npm package that exports an ESLint configuration object or array. It enables:
+
+- Consistent linting across projects
+- Team coding standards
+- Framework-specific configurations
+- Company-wide rule enforcement
+- Easy configuration updates
+
+<Info>
+**Popular Shareable Configs:**
+- `@eslint/js` - ESLint's official JavaScript configs
+- `eslint-config-airbnb` - Airbnb's JavaScript style guide
+- `eslint-config-standard` - JavaScript Standard Style
+- `eslint-config-prettier` - Disable conflicting Prettier rules
+</Info>
+
+## Creating a Shareable Config
+
+<Steps>
+  <Step title="Create npm Package">
+    Initialize a new package:
+    
+    ```bash
+    mkdir eslint-config-myconfig
+    cd eslint-config-myconfig
+    npm init -y
+    ```
+  </Step>
+  
+  <Step title="Create Configuration File">
+    Create `index.js` as the entry point:
+    
+    ```javascript index.js
+    export default [
+      {
+        languageOptions: {
+          globals: {
+            MyGlobal: true
+          }
+        },
+        
+        rules: {
+          semi: ["error", "always"],
+          quotes: ["error", "double"],
+          "no-unused-vars": "error"
+        }
+      }
+    ];
+    ```
+  </Step>
+  
+  <Step title="Configure package.json">
+    ```json package.json
+    {
+      "name": "eslint-config-myconfig",
+      "version": "1.0.0",
+      "description": "My shareable ESLint config",
+      "main": "index.js",
+      "type": "module",
+      "keywords": ["eslint", "eslintconfig"],
+      "peerDependencies": {
+        "eslint": ">= 9"
+      }
+    }
+    ```
+  </Step>
+  
+  <Step title="Publish">
+    ```bash
+    npm publish
+    ```
+  </Step>
+</Steps>
+
+## Config Naming Conventions
+
+<Tip>
+Follow these naming conventions:
+
+**Unscoped:**
+- Begin with `eslint-config-`
+- Example: `eslint-config-myconfig`
+
+**Scoped:**
+- Format: `@scope/eslint-config` or `@scope/eslint-config-name`
+- Examples: `@company/eslint-config`, `@company/eslint-config-react`
+</Tip>
+
+## Basic Config Structure
+
+Export an array of configuration objects:
+
+```javascript index.js
+export default [
+  {
+    // Language options
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: "module",
+      globals: {
+        window: "readonly",
+        document: "readonly"
+      },
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true
+        }
+      }
+    },
+    
+    // Rules
+    rules: {
+      "no-console": "warn",
+      "no-unused-vars": ["error", {
+        argsIgnorePattern: "^_"
+      }],
+      "prefer-const": "error",
+      "arrow-body-style": ["error", "as-needed"]
+    }
+  }
+];
+```
+
+## Single Config Object
+
+You can also export a single configuration:
+
+```javascript index.js
+export default {
+  languageOptions: {
+    ecmaVersion: 2024
+  },
+  rules: {
+    semi: ["error", "always"]
+  }
+};
+```
+
+<Warning>
+When exporting a single object, make sure your documentation clearly shows how to use it with the `extends` key in `eslint.config.js`.
+</Warning>
+
+## Using a Shareable Config
+
+Install and use the config:
+
+<CodeGroup>
+```bash Installation
+npm install --save-dev eslint-config-myconfig
+```
+
+```javascript eslint.config.js
+import { defineConfig } from "eslint/config";
+import myconfig from "eslint-config-myconfig";
+
+export default defineConfig([
+  {
+    files: ["**/*.js"],
+    extends: [myconfig]
+  }
+]);
+```
+</CodeGroup>
+
+## Extending Configurations
+
+Build on top of other configs:
+
+```javascript index.js
+import js from "@eslint/js";
+import prettier from "eslint-config-prettier";
+
+export default [
+  // Include base configs
+  js.configs.recommended,
+  prettier,
+  
+  // Add custom rules
+  {
+    rules: {
+      "no-console": "warn",
+      "prefer-const": "error"
+    }
+  }
+];
+```
+
+## Overriding Settings
+
+Users can override your config:
+
+```javascript eslint.config.js
+import myconfig from "eslint-config-myconfig";
+
+export default [
+  {
+    extends: [myconfig],
+    
+    // Override rules
+    rules: {
+      "no-console": "off",  // Disable
+      semi: ["error", "never"]  // Change option
+    }
+  }
+];
+```
+
+## Multiple Configurations
+
+Export multiple configs from one package:
+
+<CodeGroup>
+```javascript index.js (Main Export)
+export default [
+  {
+    rules: {
+      semi: ["error", "always"],
+      quotes: ["error", "double"]
+    }
+  }
+];
+```
+
+```javascript strict.js
+export default [
+  {
+    rules: {
+      "no-console": "error",
+      "no-debugger": "error",
+      "no-alert": "error"
+    }
+  }
+];
+```
+
+```javascript react.js
+import reactPlugin from "eslint-plugin-react";
+
+export default [
+  {
+    plugins: {
+      react: reactPlugin
+    },
+    rules: {
+      "react/jsx-uses-react": "error",
+      "react/jsx-uses-vars": "error"
+    }
+  }
+];
+```
+</CodeGroup>
+
+Users can import specific configs:
+
+```javascript eslint.config.js
+import myconfig from "eslint-config-myconfig";
+import strict from "eslint-config-myconfig/strict.js";
+import react from "eslint-config-myconfig/react.js";
+
+export default [
+  {
+    extends: [myconfig, strict, react]
+  }
+];
+```
+
+## Dynamic Configurations
+
+Generate configs programmatically:
+
+```javascript index.js
+export default function createConfig(options = {}) {
+  const { strict = false, react = false } = options;
+  
+  const config = [
+    {
+      rules: {
+        semi: ["error", "always"],
+        quotes: ["error", "double"]
+      }
+    }
+  ];
+  
+  if (strict) {
+    config.push({
+      rules: {
+        "no-console": "error",
+        "no-debugger": "error"
+      }
+    });
+  }
+  
+  if (react) {
+    config.push({
+      plugins: {
+        react: require("eslint-plugin-react")
+      },
+      rules: {
+        "react/jsx-uses-react": "error"
+      }
+    });
+  }
+  
+  return config;
+}
+```
+
+Usage:
+
+```javascript eslint.config.js
+import createConfig from "eslint-config-myconfig";
+
+export default createConfig({
+  strict: true,
+  react: true
+});
+```
+
+## Including Plugins
+
+Bundle plugins with your config:
+
+```javascript index.js
+import importPlugin from "eslint-plugin-import";
+import promisePlugin from "eslint-plugin-promise";
+
+export default [
+  {
+    plugins: {
+      import: importPlugin,
+      promise: promisePlugin
+    },
+    
+    rules: {
+      // Plugin rules
+      "import/no-unresolved": "error",
+      "import/named": "error",
+      "promise/always-return": "error"
+    }
+  }
+];
+```
+
+<Tip>
+**Dependencies:**
+Add plugins as `dependencies` (not `peerDependencies`) in your `package.json`:
+
+```json
+{
+  "dependencies": {
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-promise": "^6.1.0"
+  },
+  "peerDependencies": {
+    "eslint": ">= 9"
+  }
+}
+```
+</Tip>
+
+## Including Parsers
+
+Bundle custom parsers:
+
+```javascript index.js
+import tsParser from "@typescript-eslint/parser";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
+
+export default [
+  {
+    files: ["**/*.ts", "**/*.tsx"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        project: "./tsconfig.json"
+      }
+    },
+    plugins: {
+      "@typescript-eslint": tsPlugin
+    },
+    rules: {
+      "@typescript-eslint/no-unused-vars": "error",
+      "@typescript-eslint/explicit-function-return-type": "warn"
+    }
+  }
+];
+```
+
+## Real-World Example
+
+Comprehensive config for React projects:
+
+```javascript index.js
+import js from "@eslint/js";
+import reactPlugin from "eslint-plugin-react";
+import reactHooksPlugin from "eslint-plugin-react-hooks";
+import jsxA11yPlugin from "eslint-plugin-jsx-a11y";
+import importPlugin from "eslint-plugin-import";
+import prettier from "eslint-config-prettier";
+
+export default [
+  // Base JavaScript config
+  js.configs.recommended,
+  
+  // React-specific config
+  {
+    files: ["**/*.{js,jsx,mjs,cjs,ts,tsx}"],
+    
+    plugins: {
+      react: reactPlugin,
+      "react-hooks": reactHooksPlugin,
+      "jsx-a11y": jsxA11yPlugin,
+      import: importPlugin
+    },
+    
+    languageOptions: {
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true
+        }
+      },
+      globals: {
+        React: "readonly"
+      }
+    },
+    
+    settings: {
+      react: {
+        version: "detect"
+      }
+    },
+    
+    rules: {
+      // React rules
+      "react/jsx-uses-react": "error",
+      "react/jsx-uses-vars": "error",
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off",
+      
+      // React Hooks rules
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+      
+      // Accessibility rules
+      "jsx-a11y/alt-text": "warn",
+      "jsx-a11y/anchor-is-valid": "warn",
+      
+      // Import rules
+      "import/no-unresolved": "error",
+      "import/named": "error",
+      "import/default": "error",
+      "import/namespace": "error"
+    }
+  },
+  
+  // Disable conflicting Prettier rules
+  prettier
+];
+```
+
+## File-Specific Configs
+
+Provide different configs for different file types:
+
+```javascript index.js
+export default [
+  // Base config for all JavaScript
+  {
+    files: ["**/*.js"],
+    rules: {
+      semi: ["error", "always"],
+      quotes: ["error", "double"]
+    }
+  },
+  
+  // Config for test files
+  {
+    files: ["**/*.test.js", "**/*.spec.js"],
+    languageOptions: {
+      globals: {
+        describe: "readonly",
+        it: "readonly",
+        expect: "readonly"
+      }
+    },
+    rules: {
+      "no-console": "off"  // Allow console in tests
+    }
+  },
+  
+  // Config for Node.js scripts
+  {
+    files: ["scripts/**/*.js"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        __dirname: "readonly",
+        __filename: "readonly",
+        require: "readonly",
+        module: "readonly"
+      }
+    }
+  }
+];
+```
+
+## Environment-Specific Configs
+
+Create configs for different environments:
+
+<CodeGroup>
+```javascript browser.js
+export default [
+  {
+    languageOptions: {
+      globals: {
+        window: "readonly",
+        document: "readonly",
+        navigator: "readonly",
+        localStorage: "readonly"
+      }
+    },
+    rules: {
+      "no-console": "warn"
+    }
+  }
+];
+```
+
+```javascript node.js
+export default [
+  {
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        process: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly",
+        Buffer: "readonly"
+      }
+    },
+    rules: {
+      "no-console": "off"
+    }
+  }
+];
+```
+</CodeGroup>
+
+## Testing Configs
+
+Test your shareable config:
+
+```javascript test/config.test.js
+import { ESLint } from "eslint";
+import config from "../index.js";
+
+const eslint = new ESLint({
+  overrideConfigFile: true,
+  overrideConfig: config
+});
+
+// Test valid code
+const validResults = await eslint.lintText('const x = 1;');
+console.assert(
+  validResults[0].errorCount === 0,
+  "Should have no errors"
+);
+
+// Test invalid code
+const invalidResults = await eslint.lintText('var x = 1');
+console.assert(
+  invalidResults[0].errorCount > 0,
+  "Should have errors"
+);
+
+console.log("All tests passed!");
+```
+
+## Documentation Template
+
+Provide clear documentation:
+
+```markdown README.md
+# eslint-config-myconfig
+
+Shareable ESLint config for MyCompany projects.
+
+## Installation
+
+\`\`\`bash
+npm install --save-dev eslint-config-myconfig
+\`\`\`
+
+## Usage
+
+Create `eslint.config.js`:
+
+\`\`\`javascript
+import myconfig from "eslint-config-myconfig";
+
+export default [
+  {
+    files: ["**/*.js"],
+    extends: [myconfig]
+  }
+];
+\`\`\`
+
+## Configurations
+
+### Default
+
+Standard configuration for all projects.
+
+\`\`\`javascript
+import myconfig from "eslint-config-myconfig";
+\`\`\`
+
+### Strict
+
+Stricter rules for production code.
+
+\`\`\`javascript
+import strict from "eslint-config-myconfig/strict.js";
+\`\`\`
+
+### React
+
+Additional rules for React projects.
+
+\`\`\`javascript
+import react from "eslint-config-myconfig/react.js";
+\`\`\`
+
+## Rules
+
+### Code Quality
+
+- `no-console`: Warn on console statements
+- `no-unused-vars`: Error on unused variables
+- `prefer-const`: Prefer const over let
+
+### Formatting
+
+- `semi`: Require semicolons
+- `quotes`: Use double quotes
+- `indent`: 2 spaces
+
+## Extending
+
+Override rules:
+
+\`\`\`javascript
+import myconfig from "eslint-config-myconfig";
+
+export default [
+  {
+    extends: [myconfig],
+    rules: {
+      "no-console": "off"  // Disable rule
+    }
+  }
+];
+\`\`\`
+
+## License
+
+MIT
+```
+
+## Publishing Checklist
+
+<Steps>
+  <Step title="Package Configuration">
+    - [ ] Correct `main` entry point
+    - [ ] Appropriate keywords in `package.json`
+    - [ ] `peerDependencies` for ESLint
+    - [ ] `dependencies` for included plugins
+  </Step>
+  
+  <Step title="Documentation">
+    - [ ] Comprehensive README
+    - [ ] Installation instructions
+    - [ ] Usage examples
+    - [ ] Rule documentation
+    - [ ] Migration guide (if updating)
+  </Step>
+  
+  <Step title="Testing">
+    - [ ] Test config with ESLint
+    - [ ] Verify all plugins work
+    - [ ] Test overrides
+    - [ ] Check edge cases
+  </Step>
+  
+  <Step title="Versioning">
+    - [ ] Follow semantic versioning
+    - [ ] Maintain changelog
+    - [ ] Document breaking changes
+  </Step>
+</Steps>
+
+## Maintenance
+
+### Version Updates
+
+Update peer dependencies:
+
+```json package.json
+{
+  "peerDependencies": {
+    "eslint": ">= 9.0.0"
+  }
+}
+```
+
+### Deprecation
+
+When deprecating rules:
+
+```javascript
+export default [
+  {
+    rules: {
+      // Deprecated - use 'new-rule' instead
+      "old-rule": "off",
+      "new-rule": "error"
+    }
+  }
+];
+```
+
+## Best Practices
+
+<Warning>
+Follow these guidelines:
+
+1. **Keep configs focused** - One concern per config
+2. **Document thoroughly** - Examples for every rule
+3. **Test configurations** - Verify with real code
+4. **Version carefully** - Breaking changes need major version bump
+5. **Stay updated** - Keep plugin dependencies current
+6. **Provide overrides** - Make configs customizable
+</Warning>
+
+### Config Organization
+
+```javascript
+// Good: Organized by category
+export default [
+  {
+    rules: {
+      // Possible Errors
+      "no-console": "warn",
+      "no-debugger": "error",
+      
+      // Best Practices
+      "prefer-const": "error",
+      "no-var": "error",
+      
+      // Style
+      "semi": ["error", "always"],
+      "quotes": ["error", "double"]
+    }
+  }
+];
+```
+
+## Legacy Config Support
+
+Support both flat and legacy formats:
+
+```javascript index.js
+// Flat config (recommended)
+export const flatConfig = [
+  {
+    rules: {
+      semi: ["error", "always"]
+    }
+  }
+];
+
+// Legacy config
+export const legacyConfig = {
+  rules: {
+    semi: ["error", "always"]
+  }
+};
+
+// Default export for flat config
+export default flatConfig;
+```
+
+Users choose format:
+
+```javascript
+// Flat config
+import config from "eslint-config-myconfig";
+
+// Legacy config
+import { legacyConfig } from "eslint-config-myconfig";
+```
+
+## Real-World Examples
+
+<CardGroup cols={2}>
+  <Card title="@eslint/js" icon="github" href="https://github.com/eslint/eslint/tree/main/packages/js">
+    Official ESLint JavaScript configs
+  </Card>
+  
+  <Card title="eslint-config-airbnb" icon="github" href="https://github.com/airbnb/javascript/tree/master/packages/eslint-config-airbnb">
+    Airbnb's style guide
+  </Card>
+  
+  <Card title="eslint-config-standard" icon="github" href="https://github.com/standard/eslint-config-standard">
+    JavaScript Standard Style
+  </Card>
+  
+  <Card title="eslint-config-prettier" icon="github" href="https://github.com/prettier/eslint-config-prettier">
+    Disable Prettier conflicts
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create a Plugin" icon="plug" href="./plugins">
+    Package rules with your config
+  </Card>
+  
+  <Card title="Custom Rules" icon="gavel" href="./custom-rules">
+    Add custom rules to your config
+  </Card>
+</CardGroup>

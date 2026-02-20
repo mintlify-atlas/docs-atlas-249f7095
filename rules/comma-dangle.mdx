@@ -1,0 +1,285 @@
+---
+title: comma-dangle
+description: Require or disallow trailing commas
+---
+
+# comma-dangle
+
+Trailing commas in object and array literals are valid in ES5 (and ES3). This rule enforces consistent use.
+
+<Note>
+**Rule Type:** Layout  
+**Fixable:** Yes (automatically fixable)  
+**Deprecated:** Consider using Prettier
+</Note>
+
+## Why This Rule Exists
+
+Trailing commas have advantages:
+
+**Cleaner diffs:**
+
+```diff
+// Without trailing comma
+var foo = {
+    bar: "baz",
+-   qux: "quux"
++   qux: "quux",
++   added: "new"
+};
+
+// With trailing comma
+var foo = {
+    bar: "baz",
+    qux: "quux",
++   added: "new",
+};
+```
+
+**Easier refactoring:**
+- Add/remove items by editing one line
+- Less chance of syntax errors
+
+## Rule Details
+
+This rule enforces consistent trailing comma usage.
+
+## Options
+
+### String Option
+
+- `"never"` (default) - Disallow trailing commas
+- `"always"` - Require trailing commas  
+- `"always-multiline"` - Require when last element is on different line
+- `"only-multiline"` - Allow but don't require when multiline
+
+### Object Option
+
+Configure for each syntax type:
+
+```js
+{
+  "comma-dangle": ["error", {
+    "arrays": "never",
+    "objects": "never",
+    "imports": "never",
+    "exports": "never",
+    "functions": "never"
+  }]
+}
+```
+
+## Examples
+
+### `"never"`
+
+**Incorrect:**
+
+```js
+var foo = {
+    bar: "baz",
+    qux: "quux",
+};
+
+var arr = [1,2,];
+
+foo({
+  bar: "baz",
+  qux: "quux",
+});
+```
+
+**Correct:**
+
+```js
+var foo = {
+    bar: "baz",
+    qux: "quux"
+};
+
+var arr = [1,2];
+
+foo({
+  bar: "baz",
+  qux: "quux"
+});
+```
+
+### `"always"`
+
+**Incorrect:**
+
+```js
+var foo = {
+    bar: "baz",
+    qux: "quux"
+};
+
+var arr = [1,2];
+```
+
+**Correct:**
+
+```js
+var foo = {
+    bar: "baz",
+    qux: "quux",
+};
+
+var arr = [1,2,];
+
+foo({
+  bar: "baz",
+  qux: "quux",
+},);
+```
+
+### `"always-multiline"`
+
+<Tip>
+Most popular option - requires trailing commas for multiline, forbids for single-line.
+</Tip>
+
+**Incorrect:**
+
+```js
+var foo = {
+    bar: "baz",
+    qux: "quux"
+};
+
+var foo = { bar: "baz", qux: "quux", };
+
+var arr = [1,2,];
+
+var arr = [
+    1,
+    2
+];
+```
+
+**Correct:**
+
+```js
+var foo = {
+    bar: "baz",
+    qux: "quux",
+};
+
+var foo = {bar: "baz", qux: "quux"};
+
+var arr = [1,2];
+
+var arr = [
+    1,
+    2,
+];
+```
+
+### `"only-multiline"`
+
+Allow but don't require trailing commas when multiline.
+
+**Incorrect:**
+
+```js
+var foo = { bar: "baz", qux: "quux", };
+var arr = [1,2,];
+```
+
+**Correct:**
+
+```js
+var foo = {
+    bar: "baz",
+    qux: "quux",
+};
+
+var foo = {
+    bar: "baz",
+    qux: "quux"
+};
+
+var foo = {bar: "baz", qux: "quux"};
+var arr = [1,2];
+```
+
+### Functions
+
+<Warning>
+Function trailing commas require ES2017+.
+</Warning>
+
+**Incorrect with `{"functions": "never"}`:**
+
+```js
+function foo(a, b,) {
+}
+
+foo(a, b,);
+new foo(a, b,);
+```
+
+**Correct:**
+
+```js
+function foo(a, b) {
+}
+
+foo(a, b);
+new foo(a, b);
+```
+
+## Configuration Examples
+
+```js
+// Never use trailing commas
+{
+  "rules": {
+    "comma-dangle": ["error", "never"]
+  }
+}
+
+// Always use trailing commas
+{
+  "rules": {
+    "comma-dangle": ["error", "always"]
+  }
+}
+
+// Only for multiline (recommended)
+{
+  "rules": {
+    "comma-dangle": ["error", "always-multiline"]
+  }
+}
+
+// Different rules per type
+{
+  "rules": {
+    "comma-dangle": ["error", {
+      "arrays": "always-multiline",
+      "objects": "always-multiline",
+      "imports": "always-multiline",
+      "exports": "always-multiline",
+      "functions": "never"
+    }]
+  }
+}
+```
+
+## When Not to Use It
+
+<Tip>
+Most teams now use Prettier for formatting. If you use Prettier, disable this rule.
+</Tip>
+
+Disable if:
+- You use Prettier or another formatter
+- You need IE8 compatibility (very rare now)
+- Your team hasn't agreed on trailing comma style
+
+## Related Rules
+
+- [comma-spacing](/rules/comma-spacing)
+- [comma-style](/rules/comma-style)

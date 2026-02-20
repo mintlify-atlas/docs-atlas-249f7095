@@ -1,0 +1,816 @@
+---
+title: Custom Formatters
+description: Create custom formatters to control how ESLint displays linting results in any format
+---
+
+# Custom Formatters
+
+Custom formatters allow you to control how ESLint displays linting results. Whether you need JSON for CI/CD integration, HTML reports for dashboards, or custom formats for specific tools, formatters make it possible.
+
+## When to Create a Formatter
+
+Create a custom formatter when you need to:
+
+- Generate reports for CI/CD systems
+- Create HTML dashboards or visualizations
+- Integrate with IDEs or editors
+- Export to specific file formats (XML, CSV, JUnit)
+- Apply custom styling or branding
+- Aggregate results across multiple runs
+
+<Info>
+**Built-in Formatters:**
+
+ESLint includes several built-in formatters: `stylish`, `compact`, `json`, `junit`, `html`, and more. Use these as references for creating your own.
+</Info>
+
+## Formatter Structure
+
+A formatter is a function that receives results and returns a string:
+
+```javascript
+module.exports = function(results, context) {
+  // Process results
+  return "formatted output string";
+};
+```
+
+### Synchronous Formatter
+
+```javascript my-formatter.js
+module.exports = function(results, context) {
+  let output = "";
+  
+  results.forEach(result => {
+    output += `${result.filePath}\n`;
+    
+    result.messages.forEach(msg => {
+      output += `  ${msg.line}:${msg.column} ${msg.message}\n`;
+    });
+  });
+  
+  return output;
+};
+```
+
+### Async Formatter
+
+```javascript my-async-formatter.js
+module.exports = async function(results, context) {
+  // Perform async operations
+  await sendToAPI(results);
+  
+  // Format and return
+  return JSON.stringify(results, null, 2);
+};
+```
+
+## The Results Parameter
+
+The `results` parameter is an array of `LintResult` objects:
+
+```javascript
+[
+  {
+    filePath: "/path/to/file.js",
+    messages: [
+      {
+        ruleId: "no-unused-vars",
+        severity: 2,
+        message: "'x' is defined but never used.",
+        line: 2,
+        column: 7,
+        endLine: 2,
+        endColumn: 8,
+        nodeType: "Identifier"
+      }
+    ],
+    errorCount: 1,
+    warningCount: 0,
+    fixableErrorCount: 0,
+    fixableWarningCount: 0,
+    source: "const x = 1;\nconsole.log('hello');\n"
+  }
+]
+```
+
+### LintResult Properties
+
+<ParamField path="filePath" type="string">
+  Absolute path to the linted file
+</ParamField>
+
+<ParamField path="messages" type="LintMessage[]">
+  Array of lint messages for this file
+</ParamField>
+
+<ParamField path="errorCount" type="number">
+  Number of errors (severity 2)
+</ParamField>
+
+<ParamField path="warningCount" type="number">
+  Number of warnings (severity 1)
+</ParamField>
+
+<ParamField path="fixableErrorCount" type="number">
+  Number of errors that can be auto-fixed
+</ParamField>
+
+<ParamField path="fixableWarningCount" type="number">
+  Number of warnings that can be auto-fixed
+</ParamField>
+
+<ParamField path="source" type="string">
+  Source code of the file (may be omitted)
+</ParamField>
+
+<ParamField path="suppressedMessages" type="LintMessage[]">
+  Messages that were suppressed by inline comments
+</ParamField>
+
+### LintMessage Properties
+
+<ParamField path="ruleId" type="string | null">
+  ID of the rule that generated the message
+</ParamField>
+
+<ParamField path="severity" type="0 | 1 | 2">
+  Message severity: 0 (off), 1 (warn), 2 (error)
+</ParamField>
+
+<ParamField path="message" type="string">
+  Human-readable error message
+</ParamField>
+
+<ParamField path="line" type="number">
+  1-based line number where the issue occurs
+</ParamField>
+
+<ParamField path="column" type="number">
+  1-based column number where the issue occurs
+</ParamField>
+
+<ParamField path="endLine" type="number">
+  1-based line number where the issue ends
+</ParamField>
+
+<ParamField path="endColumn" type="number">
+  1-based column number where the issue ends
+</ParamField>
+
+<ParamField path="fix" type="object">
+  Auto-fix information (if available)
+  
+  ```javascript
+  {
+    range: [0, 5],
+    text: "const"
+  }
+  ```
+</ParamField>
+
+<ParamField path="suggestions" type="array">
+  Alternative fixes that require manual approval
+</ParamField>
+
+## The Context Parameter
+
+The `context` object provides additional information:
+
+```javascript
+{
+  cwd: "/project/root",
+  color: true,  // or false, or undefined
+  maxWarningsExceeded: {
+    maxWarnings: 5,
+    foundWarnings: 6
+  },
+  rulesMeta: {
+    "no-unused-vars": {
+      type: "problem",
+      docs: {
+        description: "Disallow unused variables",
+        recommended: true,
+        url: "https://eslint.org/docs/rules/no-unused-vars"
+      },
+      fixable: "code",
+      messages: {
+        unusedVar: "'{{varName}}' is defined but never used."
+      }
+    }
+  }
+}
+```
+
+<ParamField path="cwd" type="string">
+  Current working directory
+</ParamField>
+
+<ParamField path="color" type="boolean | undefined">
+  Whether color output was requested (`--color` or `--no-color`)
+</ParamField>
+
+<ParamField path="maxWarningsExceeded" type="object | undefined">
+  Present if `--max-warnings` was exceeded
+  
+  - `maxWarnings`: The limit that was set
+  - `foundWarnings`: Actual number of warnings
+</ParamField>
+
+<ParamField path="rulesMeta" type="object">
+  Metadata for all rules that were run
+</ParamField>
+
+## Example: Summary Formatter
+
+Display only error and warning counts:
+
+```javascript
+module.exports = function(results, context) {
+  // Calculate totals
+  const summary = results.reduce(
+    (acc, result) => ({
+      errors: acc.errors + result.errorCount,
+      warnings: acc.warnings + result.warningCount
+    }),
+    { errors: 0, warnings: 0 }
+  );
+  
+  // Format output
+  if (summary.errors > 0 || summary.warnings > 0) {
+    return `Errors: ${summary.errors}, Warnings: ${summary.warnings}\n`;
+  }
+  
+  return "No problems found!\n";
+};
+```
+
+Usage:
+
+```bash
+eslint -f ./my-formatter.js src/
+```
+
+Output:
+
+```
+Errors: 2, Warnings: 4
+```
+
+## Example: Detailed Formatter
+
+Include file paths and rule information:
+
+```javascript
+module.exports = function(results, context) {
+  const output = [];
+  
+  results.forEach(result => {
+    if (result.messages.length === 0) return;
+    
+    output.push(`\nFile: ${result.filePath}`);
+    
+    result.messages.forEach(msg => {
+      const severity = msg.severity === 2 ? "error" : "warning";
+      const ruleInfo = context.rulesMeta[msg.ruleId];
+      const ruleUrl = ruleInfo?.docs?.url || "";
+      
+      output.push(
+        `  ${msg.line}:${msg.column} ${severity} ${msg.message} (${msg.ruleId})${
+          ruleUrl ? ` ${ruleUrl}` : ""
+        }`
+      );
+    });
+  });
+  
+  return output.join("\n") + "\n";
+};
+```
+
+Output:
+
+```
+File: /project/src/app.js
+  2:7 error 'x' is defined but never used. (no-unused-vars) https://eslint.org/docs/rules/no-unused-vars
+  5:1 warning Unexpected console statement. (no-console) https://eslint.org/docs/rules/no-console
+```
+
+## Example: JSON Formatter
+
+Format as JSON for tool integration:
+
+```javascript
+module.exports = function(results, context) {
+  // ESLint's built-in JSON formatter
+  return JSON.stringify(results, null, 2);
+};
+```
+
+## Example: HTML Report
+
+Generate an HTML dashboard:
+
+```javascript
+module.exports = function(results, context) {
+  const totalErrors = results.reduce((sum, r) => sum + r.errorCount, 0);
+  const totalWarnings = results.reduce((sum, r) => sum + r.warningCount, 0);
+  
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESLint Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .summary { padding: 20px; background: #f5f5f5; }
+    .error { color: #d32f2f; }
+    .warning { color: #f57c00; }
+    .file { margin: 20px 0; border: 1px solid #ddd; padding: 15px; }
+    .message { margin: 10px 0; padding: 10px; background: #fff; }
+  </style>
+</head>
+<body>
+  <h1>ESLint Report</h1>
+  
+  <div class="summary">
+    <h2>Summary</h2>
+    <p class="error">Errors: ${totalErrors}</p>
+    <p class="warning">Warnings: ${totalWarnings}</p>
+  </div>
+  
+  ${results.map(result => `
+    <div class="file">
+      <h3>${result.filePath}</h3>
+      ${result.messages.map(msg => `
+        <div class="message ${msg.severity === 2 ? 'error' : 'warning'}">
+          <strong>Line ${msg.line}:${msg.column}</strong> - ${msg.message}
+          <br><small>Rule: ${msg.ruleId}</small>
+        </div>
+      `).join('')}
+    </div>
+  `).join('')}
+</body>
+</html>
+  `;
+  
+  return html;
+};
+```
+
+## Example: JUnit XML
+
+Generate JUnit-compatible XML for CI systems:
+
+```javascript
+function xmlEscape(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+module.exports = function(results, context) {
+  let output = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  output += '<testsuites>\n';
+  
+  results.forEach(result => {
+    const testCount = result.messages.length;
+    const failures = result.messages.filter(m => m.severity === 2).length;
+    
+    output += `  <testsuite name="${xmlEscape(result.filePath)}" tests="${testCount}" failures="${failures}">\n`;
+    
+    result.messages.forEach((msg, index) => {
+      const testName = `${msg.ruleId}:${msg.line}:${msg.column}`;
+      
+      output += `    <testcase name="${xmlEscape(testName)}" classname="${xmlEscape(result.filePath)}">\n`;
+      
+      if (msg.severity === 2) {
+        output += `      <failure message="${xmlEscape(msg.message)}">`;
+        output += xmlEscape(`${msg.line}:${msg.column} ${msg.message}`);
+        output += `</failure>\n`;
+      }
+      
+      output += `    </testcase>\n`;
+    });
+    
+    output += `  </testsuite>\n`;
+  });
+  
+  output += '</testsuites>\n';
+  
+  return output;
+};
+```
+
+## Using Environment Variables
+
+Customize formatter behavior with environment variables:
+
+```javascript
+module.exports = function(results, context) {
+  const skipWarnings = process.env.FORMATTER_SKIP_WARNINGS === "true";
+  const verbose = process.env.FORMATTER_VERBOSE === "true";
+  
+  const summary = results.reduce(
+    (acc, result) => {
+      result.messages.forEach(msg => {
+        const logMessage = {
+          filePath: result.filePath,
+          ruleId: msg.ruleId,
+          message: msg.message,
+          line: msg.line,
+          column: msg.column
+        };
+        
+        if (msg.severity === 1) {
+          if (!skipWarnings) {
+            acc.warnings.push(logMessage);
+          }
+        } else if (msg.severity === 2) {
+          acc.errors.push(logMessage);
+        }
+      });
+      return acc;
+    },
+    { errors: [], warnings: [] }
+  );
+  
+  let output = "";
+  
+  [...summary.errors, ...summary.warnings].forEach(msg => {
+    output += `${msg.filePath}:${msg.line}:${msg.column} ${msg.message}`;
+    
+    if (verbose) {
+      output += ` (${msg.ruleId})`;
+    }
+    
+    output += "\n";
+  });
+  
+  return output;
+};
+```
+
+Usage:
+
+```bash
+FORMATTER_SKIP_WARNINGS=true eslint -f ./my-formatter.js src/
+FORMATTER_VERBOSE=true eslint -f ./my-formatter.js src/
+```
+
+## Terminal-Friendly Output
+
+Modern terminals support clickable links:
+
+```javascript
+module.exports = function(results, context) {
+  const output = [];
+  
+  results.forEach(result => {
+    result.messages.forEach(msg => {
+      // Format: file:line:column
+      output.push(
+        `${result.filePath}:${msg.line}:${msg.column} ` +
+        `${msg.message} (${msg.ruleId})`
+      );
+    });
+  });
+  
+  return output.join("\n") + "\n";
+};
+```
+
+Output (clickable in many terminals):
+
+```
+/project/src/app.js:5:1 Unexpected console statement. (no-console)
+/project/src/app.js:10:7 'x' is defined but never used. (no-unused-vars)
+```
+
+## Color Support
+
+Add colors when requested:
+
+```javascript
+module.exports = function(results, context) {
+  const useColor = context.color;
+  
+  const red = useColor ? "\x1b[31m" : "";
+  const yellow = useColor ? "\x1b[33m" : "";
+  const reset = useColor ? "\x1b[0m" : "";
+  const bold = useColor ? "\x1b[1m" : "";
+  
+  const output = [];
+  
+  results.forEach(result => {
+    if (result.messages.length === 0) return;
+    
+    output.push(`\n${bold}${result.filePath}${reset}`);
+    
+    result.messages.forEach(msg => {
+      const color = msg.severity === 2 ? red : yellow;
+      const level = msg.severity === 2 ? "error" : "warning";
+      
+      output.push(
+        `  ${msg.line}:${msg.column} ` +
+        `${color}${level}${reset} ` +
+        `${msg.message} ` +
+        `${color}(${msg.ruleId})${reset}`
+      );
+    });
+  });
+  
+  return output.join("\n") + "\n";
+};
+```
+
+## Creating Your Formatter
+
+<Steps>
+  <Step title="Create Formatter File">
+    ```javascript my-formatter.js
+    module.exports = function(results, context) {
+      // Start with a simple implementation
+      const output = [];
+      
+      results.forEach(result => {
+        output.push(result.filePath);
+        
+        result.messages.forEach(msg => {
+          output.push(`  ${msg.line}:${msg.column} ${msg.message}`);
+        });
+      });
+      
+      return output.join("\n");
+    };
+    ```
+  </Step>
+  
+  <Step title="Test Locally">
+    ```bash
+    eslint -f ./my-formatter.js src/
+    ```
+  </Step>
+  
+  <Step title="Add Features">
+    Enhance with:
+    - Summary statistics
+    - Color support
+    - Rule metadata
+    - Links to documentation
+  </Step>
+  
+  <Step title="Package for Distribution">
+    Create an npm package (optional):
+    
+    ```json package.json
+    {
+      "name": "eslint-formatter-custom",
+      "main": "index.js",
+      "keywords": ["eslint", "eslint-formatter", "eslintformatter"]
+    }
+    ```
+  </Step>
+</Steps>
+
+## Using a Custom Formatter
+
+### Local File
+
+```bash
+# Relative path (must start with .)
+eslint -f ./formatters/my-formatter.js src/
+
+# Absolute path
+eslint -f /path/to/my-formatter.js src/
+```
+
+### npm Package
+
+```bash
+# Install
+npm install --save-dev eslint-formatter-custom
+
+# Use (ESLint looks for eslint-formatter-* packages)
+eslint -f custom src/
+```
+
+## Packaging a Formatter
+
+<Steps>
+  <Step title="Create Package Structure">
+    ```
+    eslint-formatter-custom/
+    ├── package.json
+    ├── index.js
+    ├── README.md
+    └── test/
+        └── formatter.test.js
+    ```
+  </Step>
+  
+  <Step title="Configure package.json">
+    ```json
+    {
+      "name": "eslint-formatter-custom",
+      "version": "1.0.0",
+      "description": "Custom ESLint formatter",
+      "main": "index.js",
+      "keywords": [
+        "eslint",
+        "eslint-formatter",
+        "eslintformatter"
+      ],
+      "peerDependencies": {
+        "eslint": ">=9.0.0"
+      }
+    }
+    ```
+  </Step>
+  
+  <Step title="Implement Formatter">
+    ```javascript index.js
+    module.exports = function(results, context) {
+      // Your formatter implementation
+    };
+    ```
+  </Step>
+  
+  <Step title="Publish">
+    ```bash
+    npm publish
+    ```
+  </Step>
+</Steps>
+
+## Testing Formatters
+
+```javascript
+const assert = require("assert");
+const formatter = require("./my-formatter");
+
+const results = [
+  {
+    filePath: "/path/to/file.js",
+    messages: [
+      {
+        ruleId: "no-unused-vars",
+        severity: 2,
+        message: "'x' is defined but never used.",
+        line: 2,
+        column: 7
+      }
+    ],
+    errorCount: 1,
+    warningCount: 0,
+    fixableErrorCount: 0,
+    fixableWarningCount: 0
+  }
+];
+
+const context = {
+  cwd: "/project",
+  rulesMeta: {
+    "no-unused-vars": {
+      docs: {
+        description: "Disallow unused variables"
+      }
+    }
+  }
+};
+
+const output = formatter(results, context);
+
+assert(output.includes("file.js"));
+assert(output.includes("no-unused-vars"));
+console.log("Tests passed!");
+```
+
+## Advanced Patterns
+
+### Piping to External Tools
+
+For complex formatting, use ESLint's JSON output:
+
+```bash
+eslint -f json src/ | your-tool --process
+```
+
+Your tool receives:
+
+```javascript
+const results = JSON.parse(stdin);
+// Process and format as needed
+```
+
+### Async Formatters
+
+Perform asynchronous operations:
+
+```javascript
+module.exports = async function(results, context) {
+  // Upload to API
+  await fetch("https://api.example.com/lint-results", {
+    method: "POST",
+    body: JSON.stringify(results)
+  });
+  
+  // Return formatted output
+  return `Results uploaded. Errors: ${totalErrors}\n`;
+};
+```
+
+### Stateful Formatters
+
+Maintain state across runs (use with caution):
+
+```javascript
+let runCount = 0;
+
+module.exports = function(results, context) {
+  runCount++;
+  
+  return `Run #${runCount}: ${totalErrors} errors\n`;
+};
+```
+
+## Best Practices
+
+<Warning>
+Follow these guidelines:
+
+1. **Always return a string** - Even if empty
+2. **Handle empty results** - Check for files with no messages
+3. **Escape special characters** - Especially in HTML/XML formatters
+4. **Make output parseable** - Use consistent formats
+5. **Document your format** - Explain the output structure
+6. **Test with edge cases** - No results, many errors, long paths
+</Warning>
+
+### Error Handling
+
+```javascript
+module.exports = function(results, context) {
+  try {
+    // Format logic
+    return formatResults(results);
+  } catch (error) {
+    // Fallback to simple format
+    console.error("Formatter error:", error);
+    return JSON.stringify(results, null, 2);
+  }
+};
+```
+
+## Real-World Examples
+
+Learn from ESLint's built-in formatters:
+
+<CardGroup cols={2}>
+  <Card title="stylish" href="https://github.com/eslint/eslint/blob/main/lib/cli-engine/formatters/stylish.js">
+    Default formatter with colors and summary
+  </Card>
+  
+  <Card title="compact" href="https://github.com/eslint/eslint/blob/main/lib/cli-engine/formatters/compact.js">
+    One line per message for easy parsing
+  </Card>
+  
+  <Card title="json" href="https://github.com/eslint/eslint/blob/main/lib/cli-engine/formatters/json.js">
+    JSON output for tool integration
+  </Card>
+  
+  <Card title="html" href="https://github.com/eslint/eslint/blob/main/lib/cli-engine/formatters/html.js">
+    HTML report generator
+  </Card>
+  
+  <Card title="junit" href="https://github.com/eslint/eslint/blob/main/lib/cli-engine/formatters/junit.js">
+    JUnit XML for CI systems
+  </Card>
+  
+  <Card title="checkstyle" href="https://github.com/eslint/eslint/blob/main/lib/cli-engine/formatters/checkstyle.js">
+    Checkstyle XML format
+  </Card>
+</CardGroup>
+
+## Community Formatters
+
+Explore formatters on npm:
+
+- `eslint-formatter-table` - Table format
+- `eslint-formatter-gitlab` - GitLab code quality format
+- `eslint-formatter-pretty` - Enhanced stylish formatter
+- `eslint-formatter-summary` - Aggregated summary
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create a Plugin" icon="plug" href="./plugins">
+    Bundle formatter with rules and configs
+  </Card>
+  
+  <Card title="Built-in Formatters" icon="list" href="../use/formatters">
+    Explore all built-in formatters
+  </Card>
+</CardGroup>

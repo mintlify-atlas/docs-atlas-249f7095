@@ -1,0 +1,355 @@
+---
+title: globalIgnores
+description: Helper for creating global ignore patterns in flat config
+---
+
+The `globalIgnores` helper simplifies the creation of global ignore patterns in ESLint flat configuration files. It ensures ignore patterns are properly formatted and apply globally to all files.
+
+## Import
+
+```javascript
+const { globalIgnores } = require("eslint/config");
+
+// or ES modules
+import { globalIgnores } from "eslint/config";
+```
+
+## Usage
+
+### Basic Usage
+
+```javascript
+const { globalIgnores } = require("eslint/config");
+
+module.exports = [
+  globalIgnores(["node_modules/**", "dist/**", "build/**"]),
+  {
+    rules: {
+      "no-console": "error"
+    }
+  }
+];
+```
+
+### Common Ignore Patterns
+
+```javascript
+const { globalIgnores } = require("eslint/config");
+
+module.exports = [
+  globalIgnores([
+    // Dependencies
+    "node_modules/**",
+    
+    // Build outputs
+    "dist/**",
+    "build/**",
+    "out/**",
+    
+    // Coverage reports
+    "coverage/**",
+    
+    // IDE files
+    ".vscode/**",
+    ".idea/**",
+    
+    // Cache directories
+    ".cache/**",
+    ".eslintcache"
+  ]),
+  
+  // Your ESLint config
+  {
+    rules: {
+      "no-unused-vars": "error"
+    }
+  }
+];
+```
+
+## Function Signature
+
+```javascript
+function globalIgnores(patterns)
+```
+
+<ParamField path="patterns" type="string[]" required>
+  Array of glob patterns for files and directories to ignore globally.
+</ParamField>
+
+<ResponseField name="config" type="object">
+  A configuration object with the ignore patterns.
+  
+  <Expandable title="properties">
+    <ResponseField name="ignores" type="string[]">
+      The glob patterns to ignore.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## How It Works
+
+The `globalIgnores` helper creates a configuration object that:
+
+1. Applies ignore patterns globally (not tied to specific file patterns)
+2. Ensures proper formatting of glob patterns
+3. Makes intent clear in configuration files
+
+### Manual Equivalent
+
+These two configurations are equivalent:
+
+<Tabs>
+  <Tab title="With Helper">
+    ```javascript
+    const { globalIgnores } = require("eslint/config");
+
+    module.exports = [
+      globalIgnores(["node_modules/**", "dist/**"])
+    ];
+    ```
+  </Tab>
+  <Tab title="Manual">
+    ```javascript
+    module.exports = [
+      {
+        ignores: ["node_modules/**", "dist/**"]
+      }
+    ];
+    ```
+  </Tab>
+</Tabs>
+
+The helper version is more explicit about intent.
+
+## Examples
+
+<Tabs>
+  <Tab title="Basic Ignores">
+    ```javascript
+    const { globalIgnores } = require("eslint/config");
+
+    module.exports = [
+      globalIgnores([
+        "node_modules/**",
+        "dist/**",
+        "*.config.js"
+      ]),
+      
+      {
+        rules: {
+          "no-console": "error",
+          "no-unused-vars": "error"
+        }
+      }
+    ];
+    ```
+  </Tab>
+  <Tab title="Project Structure">
+    ```javascript
+    const { globalIgnores, defineConfig } = require("eslint/config");
+
+    module.exports = defineConfig([
+      // Ignore build artifacts and dependencies
+      globalIgnores([
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/build/**",
+        "**/.next/**",
+        "**/out/**"
+      ]),
+      
+      // Main configuration
+      {
+        languageOptions: {
+          ecmaVersion: 2024,
+          sourceType: "module"
+        },
+        rules: {
+          "no-console": "warn"
+        }
+      },
+      
+      // Source files
+      {
+        files: ["src/**/*.js"],
+        rules: {
+          "no-unused-vars": "error"
+        }
+      }
+    ]);
+    ```
+  </Tab>
+  <Tab title="Monorepo">
+    ```javascript
+    const { globalIgnores } = require("eslint/config");
+
+    module.exports = [
+      // Ignore common directories in monorepo
+      globalIgnores([
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/build/**",
+        "**/.turbo/**",
+        "**/coverage/**",
+        "**/.cache/**",
+        
+        // Ignore generated files
+        "**/*.generated.ts",
+        "**/graphql-types.ts"
+      ]),
+      
+      {
+        files: ["packages/*/src/**/*.ts"],
+        rules: {
+          "@typescript-eslint/no-explicit-any": "error"
+        }
+      }
+    ];
+    ```
+  </Tab>
+  <Tab title="With Negation">
+    ```javascript
+    const { globalIgnores } = require("eslint/config");
+
+    module.exports = [
+      // Ignore everything in temp, except important.js
+      globalIgnores([
+        "temp/**",
+        "!temp/important.js"
+      ]),
+      
+      {
+        files: ["**/*.js"],
+        rules: {
+          "no-console": "error"
+        }
+      }
+    ];
+    ```
+  </Tab>
+</Tabs>
+
+## Pattern Syntax
+
+The `globalIgnores` helper accepts glob patterns using minimatch syntax:
+
+### Wildcards
+
+- `*` - Matches any characters except `/`
+- `**` - Matches any characters including `/` (recursive)
+- `?` - Matches a single character except `/`
+
+### Examples
+
+```javascript
+globalIgnores([
+  "*.log",           // All .log files in root
+  "**/*.log",        // All .log files anywhere
+  "temp/**",         // Everything in temp directory
+  "build/**/test",   // test directories under build
+  "!important.log"   // Negation: don't ignore this file
+])
+```
+
+## Best Practices
+
+### Place at the Beginning
+
+Always place `globalIgnores()` at the start of your config array:
+
+```javascript
+module.exports = [
+  // Global ignores first
+  globalIgnores(["node_modules/**", "dist/**"]),
+  
+  // Then your configs
+  { /* ... */ }
+];
+```
+
+### Use Consistent Patterns
+
+Be consistent with trailing slashes for directories:
+
+```javascript
+// Good: explicit directory patterns
+globalIgnores([
+  "node_modules/**",
+  "dist/**",
+  "build/**"
+])
+
+// Avoid: mixing patterns
+globalIgnores([
+  "node_modules",  // unclear if file or directory
+  "dist/**"
+])
+```
+
+### Combine with .gitignore
+
+Keep your ignore patterns similar to `.gitignore`:
+
+```javascript
+// .gitignore
+/*
+node_modules/
+dist/
+coverage/
+.env.local
+*/
+
+// eslint.config.js
+globalIgnores([
+  "node_modules/**",
+  "dist/**",
+  "coverage/**",
+  ".env.local"
+])
+```
+
+### Don't Ignore Config Files
+
+Be careful not to ignore your ESLint config:
+
+```javascript
+// Good: specific ignore patterns
+globalIgnores([
+  "*.min.js",
+  "!eslint.config.js"
+])
+
+// Bad: might ignore config
+globalIgnores([
+  "*.js"  // This would ignore eslint.config.js!
+])
+```
+
+## Differences from Legacy Config
+
+In eslintrc, ignores were specified differently:
+
+<Tabs>
+  <Tab title="Flat Config (New)">
+    ```javascript
+    const { globalIgnores } = require("eslint/config");
+
+    module.exports = [
+      globalIgnores(["node_modules/**", "dist/**"])
+    ];
+    ```
+  </Tab>
+  <Tab title="eslintrc (Legacy)">
+    ```json
+    {
+      "ignorePatterns": ["node_modules/", "dist/"]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Related
+
+- [defineConfig()](/api/config/define-config) - Type-safe config helper
+- [ESLint Ignore Files](https://eslint.org/docs/latest/use/configure/ignore) - Ignore configuration documentation

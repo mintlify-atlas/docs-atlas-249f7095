@@ -1,0 +1,358 @@
+---
+title: prefer-promise-reject-errors
+description: Require using Error objects as Promise rejection reasons
+---
+
+# prefer-promise-reject-errors
+
+It's good practice to only reject Promises with `Error` objects. Errors automatically store stack traces for debugging.
+
+<Note>
+**Rule Type:** Suggestion  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+`Error` objects provide:
+- **Stack traces**: See where rejection occurred
+- **Standard format**: Consistent error handling
+- **Type checking**: Can check if value is Error
+- **Better debugging**: Shows full call stack
+
+Without Error objects, debugging is much harder.
+
+## Rule Details
+
+This rule enforces that Promises are only rejected with `Error` objects.
+
+## Examples
+
+### Incorrect Code
+
+```js
+Promise.reject("something bad happened");
+
+Promise.reject(5);
+
+Promise.reject();
+
+new Promise(function(resolve, reject) {
+  reject("something bad happened");
+});
+
+new Promise(function(resolve, reject) {
+  reject();
+});
+```
+
+### Correct Code
+
+```js
+Promise.reject(new Error("something bad happened"));
+
+Promise.reject(new TypeError("something bad happened"));
+
+new Promise(function(resolve, reject) {
+  reject(new Error("something bad happened"));
+});
+
+const foo = getUnknownValue();
+Promise.reject(foo);
+```
+
+## Options
+
+### `allowEmptyReject`
+
+**Type:** `boolean`  
+**Default:** `false`
+
+Allow `Promise.reject()` with no arguments.
+
+```js
+{
+  "rules": {
+    "prefer-promise-reject-errors": ["error", { 
+      "allowEmptyReject": true 
+    }]
+  }
+}
+```
+
+**With allowEmptyReject: true**
+
+```js
+Promise.reject(); // OK
+
+new Promise(function(resolve, reject) {
+  reject(); // OK
+});
+```
+
+## Benefits of Error Objects
+
+### Stack Traces
+
+<Tip>
+Error objects capture where they were created, making debugging much easier.
+</Tip>
+
+```js
+// Without Error - no stack trace
+Promise.reject("failed")
+  .catch(err => {
+    console.log(err); // "failed" - where did this come from?
+  });
+
+// With Error - full stack trace
+Promise.reject(new Error("failed"))
+  .catch(err => {
+    console.log(err.stack);
+    // Error: failed
+    //   at fetchData (app.js:15:20)
+    //   at async handler (app.js:42:10)
+  });
+```
+
+### Type Checking
+
+```js
+// Can't check type of string
+Promise.reject("error")
+  .catch(err => {
+    if (err instanceof Error) { // false!
+      // Won't run
+    }
+  });
+
+// Can check Error type
+Promise.reject(new Error("error"))
+  .catch(err => {
+    if (err instanceof Error) { // true
+      console.error(err.message);
+    }
+  });
+```
+
+### Error Logging Services
+
+```js
+// Logging services expect Errors
+import * as Sentry from '@sentry/browser';
+
+// Wrong - missing context
+Promise.reject("API failed")
+  .catch(err => Sentry.captureException(err)); // No stack!
+
+// Right - full context
+Promise.reject(new Error("API failed"))
+  .catch(err => Sentry.captureException(err)); // Stack included!
+```
+
+## Common Patterns
+
+### API Errors
+
+```js
+// Wrong
+function fetchUser(id) {
+  return fetch(`/api/users/${id}`)
+    .then(res => {
+      if (!res.ok) {
+        return Promise.reject(res.statusText); // String!
+      }
+      return res.json();
+    });
+}
+
+// Right
+function fetchUser(id) {
+  return fetch(`/api/users/${id}`)
+    .then(res => {
+      if (!res.ok) {
+        return Promise.reject(
+          new Error(`API error: ${res.statusText}`)
+        );
+      }
+      return res.json();
+    });
+}
+```
+
+### Validation Errors
+
+```js
+// Wrong
+function validateUser(user) {
+  if (!user.email) {
+    return Promise.reject("Email required");
+  }
+  return Promise.resolve(user);
+}
+
+// Right
+function validateUser(user) {
+  if (!user.email) {
+    return Promise.reject(new Error("Email required"));
+  }
+  return Promise.resolve(user);
+}
+
+// Even better - custom error
+class ValidationError extends Error {
+  constructor(message, field) {
+    super(message);
+    this.field = field;
+  }
+}
+
+function validateUser(user) {
+  if (!user.email) {
+    return Promise.reject(
+      new ValidationError("Email required", "email")
+    );
+  }
+  return Promise.resolve(user);
+}
+```
+
+### Timeout Errors
+
+```js
+// Wrong
+function timeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => 
+      setTimeout(() => reject("Timeout"), ms)
+    )
+  ]);
+}
+
+// Right
+function timeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => 
+      setTimeout(
+        () => reject(new Error("Timeout")),
+        ms
+      )
+    )
+  ]);
+}
+```
+
+## Custom Error Types
+
+### Extending Error
+
+```js
+class NetworkError extends Error {
+  constructor(message, statusCode) {
+    super(message);
+    this.name = 'NetworkError';
+    this.statusCode = statusCode;
+  }
+}
+
+class ValidationError extends Error {
+  constructor(message, errors) {
+    super(message);
+    this.name = 'ValidationError';
+    this.errors = errors;
+  }
+}
+
+// Use them
+function fetchData(url) {
+  return fetch(url)
+    .then(res => {
+      if (!res.ok) {
+        throw new NetworkError(
+          'Request failed',
+          res.status
+        );
+      }
+      return res.json();
+    })
+    .then(data => {
+      if (!validate(data)) {
+        throw new ValidationError(
+          'Invalid data',
+          getErrors(data)
+        );
+      }
+      return data;
+    });
+}
+
+// Handle them
+fetchData('/api/users')
+  .catch(err => {
+    if (err instanceof NetworkError) {
+      console.log('Network error:', err.statusCode);
+    } else if (err instanceof ValidationError) {
+      console.log('Validation errors:', err.errors);
+    }
+  });
+```
+
+## Known Limitations
+
+This rule uses static analysis and cannot guarantee that you only reject with Errors:
+
+```js
+// Rule can't tell if this is an Error
+const possiblyError = getValue();
+Promise.reject(possiblyError); // No warning
+```
+
+## Async Functions
+
+This rule doesn't check `throw` in async functions (they become rejections), but `no-throw-literal` does:
+
+```js
+// This rule doesn't check this
+async function example() {
+  throw "error"; // Use no-throw-literal
+}
+
+// But does check explicit rejects
+async function example() {
+  return Promise.reject("error"); // Caught by this rule
+}
+```
+
+## Configuration
+
+```js
+// Default
+{
+  "rules": {
+    "prefer-promise-reject-errors": "error"
+  }
+}
+
+// Allow empty rejects
+{
+  "rules": {
+    "prefer-promise-reject-errors": ["error", { 
+      "allowEmptyReject": true 
+    }]
+  }
+}
+```
+
+## When Not to Use It
+
+Disable if you intentionally reject with non-Error values. However, this makes debugging harder and is generally not recommended.
+
+## Related Rules
+
+- [no-throw-literal](/rules/no-throw-literal)
+
+## Further Reading
+
+- [Bluebird Promise Warning](http://bluebirdjs.com/docs/warning-explanations.html#warning-a-promise-was-rejected-with-a-non-error)

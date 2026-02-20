@@ -1,0 +1,680 @@
+---
+title: Configure Rules Effectively
+description: Master ESLint rule configuration with practical examples, severity levels, and best practices for teams
+---
+
+# Configure Rules Effectively
+
+ESLint rules are the foundation of code quality enforcement. This guide teaches you how to configure rules effectively for your team and project.
+
+<Info>
+ESLint has over 280 built-in rules, and thousands more available via plugins.
+</Info>
+
+## Understanding Rule Basics
+
+### Rule Severity Levels
+
+Every ESLint rule has a severity level that determines how violations are handled:
+
+| Level | Value | Behavior |
+|-------|-------|----------|
+| **Off** | `"off"` or `0` | Rule is disabled |
+| **Warn** | `"warn"` or `1` | Violations logged as warnings (exit code 0) |
+| **Error** | `"error"` or `2` | Violations logged as errors (exit code 1) |
+
+**Example:**
+```javascript
+export default [
+  {
+    rules: {
+      "no-unused-vars": "error",    // Fails CI builds
+      "no-console": "warn",         // Shows warning only
+      "no-alert": "off"             // Completely disabled
+    }
+  }
+];
+```
+
+<Tip>
+**Best Practice:** Use `"error"` for critical issues, `"warn"` for code smells you're gradually fixing, and `"off"` for rules that don't apply to your project.
+</Tip>
+
+---
+
+## Basic Rule Configuration
+
+### Simple On/Off Rules
+
+Many rules work as simple toggles:
+
+```javascript
+export default [
+  {
+    files: ["**/*.js"],
+    rules: {
+      // Disallow var, prefer const/let
+      "no-var": "error",
+      
+      // Require === instead of ==
+      "eqeqeq": "error",
+      
+      // Disallow console statements
+      "no-console": "warn",
+      
+      // Allow debugger in development
+      "no-debugger": process.env.NODE_ENV === "production" ? "error" : "off"
+    }
+  }
+];
+```
+
+---
+
+### Rules with Options
+
+Many rules accept configuration options:
+
+```javascript
+export default [
+  {
+    rules: {
+      // Rule with single option
+      "quotes": ["error", "double"],
+      
+      // Rule with multiple options
+      "comma-dangle": ["error", {
+        "arrays": "always-multiline",
+        "objects": "always-multiline",
+        "imports": "never",
+        "exports": "never",
+        "functions": "never"
+      }],
+      
+      // Complex rule configuration
+      "no-unused-vars": ["error", {
+        "vars": "all",
+        "args": "after-used",
+        "ignoreRestSiblings": true,
+        "argsIgnorePattern": "^_"
+      }]
+    }
+  }
+];
+```
+
+<Tip>
+Check the [rule documentation](https://eslint.org/docs/rules) for available options. Each rule page includes a "Options" section.
+</Tip>
+
+---
+
+## Configuration Strategies
+
+### Using Presets
+
+Start with recommended configurations and customize:
+
+```javascript
+import js from "@eslint/js";
+
+export default [
+  // Start with recommended rules
+  js.configs.recommended,
+  
+  // Override specific rules
+  {
+    rules: {
+      "no-unused-vars": "warn", // Downgrade from error to warn
+      "no-console": "off"        // Disable completely
+    }
+  }
+];
+```
+
+<Info>
+Popular presets:
+- `@eslint/js` - ESLint recommended
+- `eslint-config-airbnb` - Airbnb style guide
+- `eslint-config-standard` - JavaScript Standard Style
+- `@typescript-eslint/recommended` - TypeScript rules
+</Info>
+
+---
+
+### File-Specific Configuration
+
+Apply different rules to different file types:
+
+```javascript
+export default [
+  // Strict rules for production code
+  {
+    files: ["src/**/*.js"],
+    rules: {
+      "no-console": "error",
+      "no-debugger": "error",
+      "complexity": ["error", 10]
+    }
+  },
+  
+  // Relaxed rules for tests
+  {
+    files: ["**/*.test.js", "**/*.spec.js"],
+    rules: {
+      "no-console": "off",
+      "max-lines-per-function": "off",
+      "max-nested-callbacks": "off"
+    }
+  },
+  
+  // Config files can use require()
+  {
+    files: ["*.config.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off"
+    }
+  }
+];
+```
+
+---
+
+### Environment-Based Configuration
+
+Adjust rules based on environment:
+
+```javascript
+const isProduction = process.env.NODE_ENV === "production";
+const isDevelopment = !isProduction;
+
+export default [
+  {
+    rules: {
+      // Strict in production, lenient in dev
+      "no-console": isProduction ? "error" : "warn",
+      "no-debugger": isProduction ? "error" : "off",
+      
+      // Performance rules for production
+      "no-await-in-loop": isProduction ? "warn" : "off",
+      
+      // Development helpers
+      "no-unused-vars": isDevelopment ? "warn" : "error"
+    }
+  }
+];
+```
+
+---
+
+## Common Rule Patterns
+
+### Code Quality Rules
+
+```javascript
+export default [
+  {
+    rules: {
+      // Prevent bugs
+      "no-unused-vars": "error",
+      "no-undef": "error",
+      "no-unreachable": "error",
+      "no-constant-condition": "error",
+      
+      // Best practices
+      "eqeqeq": ["error", "always"],
+      "no-eval": "error",
+      "no-implied-eval": "error",
+      "prefer-const": "error",
+      "no-var": "error",
+      
+      // Complexity limits
+      "complexity": ["warn", 15],
+      "max-depth": ["warn", 4],
+      "max-lines-per-function": ["warn", 50]
+    }
+  }
+];
+```
+
+---
+
+### Style Consistency Rules
+
+<Warning>
+Many style rules are deprecated in favor of formatters like Prettier. Use ESLint for logic, Prettier for formatting.
+</Warning>
+
+```javascript
+export default [
+  {
+    rules: {
+      // Naming conventions
+      "camelcase": ["error", { "properties": "never" }],
+      
+      // Modern syntax
+      "prefer-arrow-callback": "error",
+      "prefer-template": "error",
+      "object-shorthand": "error",
+      
+      // Import organization
+      "sort-imports": ["error", {
+        "ignoreCase": true,
+        "ignoreDeclarationSort": true
+      }]
+    }
+  }
+];
+```
+
+---
+
+### Security Rules
+
+```javascript
+export default [
+  {
+    rules: {
+      // Prevent security issues
+      "no-eval": "error",
+      "no-implied-eval": "error",
+      "no-new-func": "error",
+      "no-script-url": "error",
+      
+      // Safe regex
+      "no-invalid-regexp": "error",
+      "no-regex-spaces": "error",
+      
+      // Prototype pollution
+      "no-proto": "error",
+      "no-extend-native": "error"
+    }
+  }
+];
+```
+
+<Tip>
+Consider using [`eslint-plugin-security`](https://www.npmjs.com/package/eslint-plugin-security) for comprehensive security checks.
+</Tip>
+
+---
+
+## Advanced Configuration
+
+### Rule Cascading
+
+Later configurations override earlier ones:
+
+```javascript
+export default [
+  // Base config for all files
+  {
+    rules: {
+      "no-console": "error",
+      "no-unused-vars": "error"
+    }
+  },
+  
+  // Override for test files (applied second)
+  {
+    files: ["**/*.test.js"],
+    rules: {
+      "no-console": "off" // Overrides the "error" above
+    }
+  }
+];
+```
+
+---
+
+### Shared Configurations
+
+Create reusable configs for your organization:
+
+```javascript
+// configs/base.js
+export const baseConfig = {
+  rules: {
+    "no-var": "error",
+    "prefer-const": "error",
+    "eqeqeq": "error"
+  }
+};
+
+// configs/typescript.js
+export const typescriptConfig = {
+  files: ["**/*.ts"],
+  rules: {
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/explicit-function-return-type": "error"
+  }
+};
+
+// eslint.config.js
+import { baseConfig } from "./configs/base.js";
+import { typescriptConfig } from "./configs/typescript.js";
+
+export default [
+  baseConfig,
+  typescriptConfig
+];
+```
+
+---
+
+### Inline Configuration
+
+Disable rules for specific lines or files:
+
+```javascript
+// Disable for next line
+// eslint-disable-next-line no-console
+console.log("Debug info");
+
+// Disable for current line
+console.log("Debug"); // eslint-disable-line no-console
+
+// Disable entire file
+/* eslint-disable no-console */
+console.log("This file uses console");
+console.error("Errors too");
+
+// Disable multiple rules
+/* eslint-disable no-console, no-alert */
+console.log("Multiple rules disabled");
+alert("This too");
+/* eslint-enable no-console, no-alert */
+
+// Disable specific rule with reason
+// eslint-disable-next-line no-await-in-loop -- Intentional: sequential API calls required
+for (const item of items) {
+  await processItem(item);
+}
+```
+
+<Warning>
+Use inline disables sparingly. Excessive use indicates your base configuration may need adjustment.
+</Warning>
+
+---
+
+## Rule Configuration Examples
+
+<AccordionGroup>
+  <Accordion title="React Project Configuration">
+    ```javascript
+    import js from "@eslint/js";
+    import react from "eslint-plugin-react";
+    import reactHooks from "eslint-plugin-react-hooks";
+    
+    export default [
+      js.configs.recommended,
+      react.configs.flat.recommended,
+      {
+        files: ["**/*.jsx", "**/*.tsx"],
+        plugins: {
+          react,
+          "react-hooks": reactHooks
+        },
+        rules: {
+          // React rules
+          "react/prop-types": "off", // Using TypeScript
+          "react/react-in-jsx-scope": "off", // React 17+
+          "react/jsx-uses-react": "off",
+          
+          // Hooks rules
+          "react-hooks/rules-of-hooks": "error",
+          "react-hooks/exhaustive-deps": "warn"
+        }
+      }
+    ];
+    ```
+  </Accordion>
+  
+  <Accordion title="TypeScript Project Configuration">
+    ```javascript
+    import js from "@eslint/js";
+    import tseslint from "@typescript-eslint/eslint-plugin";
+    import tsparser from "@typescript-eslint/parser";
+    
+    export default [
+      js.configs.recommended,
+      {
+        files: ["**/*.ts", "**/*.tsx"],
+        languageOptions: {
+          parser: tsparser,
+          parserOptions: {
+            project: "./tsconfig.json"
+          }
+        },
+        plugins: {
+          "@typescript-eslint": tseslint
+        },
+        rules: {
+          // TypeScript-specific
+          "@typescript-eslint/no-unused-vars": ["error", {
+            "argsIgnorePattern": "^_"
+          }],
+          "@typescript-eslint/explicit-function-return-type": "warn",
+          "@typescript-eslint/no-explicit-any": "warn",
+          
+          // Disable base rule
+          "no-unused-vars": "off"
+        }
+      }
+    ];
+    ```
+  </Accordion>
+  
+  <Accordion title="Node.js API Project Configuration">
+    ```javascript
+    import js from "@eslint/js";
+    import globals from "globals";
+    
+    export default [
+      js.configs.recommended,
+      {
+        files: ["**/*.js"],
+        languageOptions: {
+          globals: {
+            ...globals.node
+          }
+        },
+        rules: {
+          // Node.js best practices
+          "no-console": "off", // Console is fine in Node
+          "no-process-exit": "error",
+          "handle-callback-err": "error",
+          
+          // Async patterns
+          "no-return-await": "error",
+          "prefer-promise-reject-errors": "error",
+          
+          // Security
+          "no-eval": "error",
+          "no-new-func": "error"
+        }
+      }
+    ];
+    ```
+  </Accordion>
+  
+  <Accordion title="Monorepo Configuration">
+    ```javascript
+    export default [
+      // Base rules for all packages
+      {
+        files: ["packages/**/*.js"],
+        rules: {
+          "no-var": "error",
+          "prefer-const": "error"
+        }
+      },
+      
+      // Frontend package
+      {
+        files: ["packages/frontend/**/*.jsx"],
+        rules: {
+          "no-console": "error",
+          "react/prop-types": "off"
+        }
+      },
+      
+      // Backend package
+      {
+        files: ["packages/backend/**/*.js"],
+        rules: {
+          "no-console": "off",
+          "no-process-env": "warn"
+        }
+      },
+      
+      // Shared utilities
+      {
+        files: ["packages/shared/**/*.js"],
+        rules: {
+          "no-console": "error",
+          "complexity": ["error", 5]
+        }
+      }
+    ];
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Performance Tips
+
+<Steps>
+  <Step title="Cache ESLint results">
+    ```bash
+    npx eslint --cache .
+    ```
+    
+    Caching speeds up subsequent runs significantly.
+  </Step>
+  
+  <Step title="Limit file scope">
+    Only lint files you care about:
+    
+    ```javascript
+    export default [
+      {
+        files: ["src/**/*.js"],
+        ignores: ["src/**/*.test.js", "dist/**", "node_modules/**"]
+      }
+    ];
+    ```
+  </Step>
+  
+  <Step title="Disable expensive rules">
+    Some rules require type information (slower):
+    
+    ```javascript
+    rules: {
+      // Fast
+      "no-console": "error",
+      
+      // Slow (requires type checking)
+      "@typescript-eslint/no-floating-promises": "off"
+    }
+    ```
+  </Step>
+  
+  <Step title="Use --max-warnings in CI">
+    ```bash
+    npx eslint --max-warnings 0 .
+    ```
+    
+    Fails the build if any warnings exist.
+  </Step>
+</Steps>
+
+---
+
+## Debugging Rule Configuration
+
+<Tip>
+Use `--debug` flag to see which configs are applied:
+
+```bash
+npx eslint --debug src/app.js
+```
+</Tip>
+
+**Print effective config for a file:**
+```bash
+npx eslint --print-config src/app.js
+```
+
+**Check which rules are enabled:**
+```bash
+npx eslint --print-config src/app.js | grep rules -A 50
+```
+
+---
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Start Strict" icon="shield-halved">
+    Enable strict rules early. It's easier to relax than tighten later.
+  </Card>
+  
+  <Card title="Document Decisions" icon="file-lines">
+    Add comments explaining why rules are disabled or configured unusually.
+  </Card>
+  
+  <Card title="Review Regularly" icon="rotate">
+    Audit your config quarterly. Remove obsolete rules and add new ones.
+  </Card>
+  
+  <Card title="Team Consensus" icon="users">
+    Discuss rule changes with the team. Avoid surprise configuration updates.
+  </Card>
+</CardGroup>
+
+---
+
+## Common Pitfalls
+
+<Warning>
+**Pitfall #1:** Too many disabled rules
+
+If you're disabling many rules, you may be using the wrong preset.
+</Warning>
+
+<Warning>
+**Pitfall #2:** Conflicting formatters
+
+Don't use both ESLint formatting rules and Prettier. Choose one.
+</Warning>
+
+<Warning>
+**Pitfall #3:** Environment mismatch
+
+Ensure your `languageOptions.globals` matches your runtime environment.
+</Warning>
+
+---
+
+## Resources
+
+<CardGroup cols={2}>
+  <Card title="Rule Reference" icon="book" href="https://eslint.org/docs/rules">
+    Complete list of ESLint rules
+  </Card>
+  
+  <Card title="Configuration Guide" icon="gear" href="https://eslint.org/docs/latest/use/configure">
+    Comprehensive configuration docs
+  </Card>
+  
+  <Card title="Plugin Directory" icon="plug" href="https://www.npmjs.com/search?q=eslint-plugin">
+    Find ESLint plugins on npm
+  </Card>
+  
+  <Card title="Awesome ESLint" icon="star" href="https://github.com/dustinspecker/awesome-eslint">
+    Curated list of ESLint resources
+  </Card>
+</CardGroup>

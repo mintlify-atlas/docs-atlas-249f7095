@@ -1,0 +1,911 @@
+---
+title: Rule Configuration
+description: Learn how to configure ESLint rules including severity levels, options, and inline comments
+---
+
+# Rule Configuration
+
+Rules are the core building block of ESLint. This page explains how to configure rule severity, options, and when rules are applied.
+
+## Rule Severity Levels
+
+Each rule has a severity level that controls how ESLint enforces it:
+
+<CardGroup cols={3}>
+  <Card title="Off" icon="circle" color="#6b7280">
+    **`"off"` or `0`**
+    
+    Rule is completely disabled
+  </Card>
+  <Card title="Warn" icon="triangle-exclamation" color="#f59e0b">
+    **`"warn"` or `1`**
+    
+    Reports violations as warnings (doesn't affect exit code)
+  </Card>
+  <Card title="Error" icon="circle-xmark" color="#ef4444">
+    **`"error"` or `2`**
+    
+    Reports violations as errors (exit code 1 when triggered)
+  </Card>
+</CardGroup>
+
+### Choosing Severity Levels
+
+<Tabs>
+  <Tab title="Error">
+    **Use for Critical Issues**
+    
+    Set rules to `"error"` when:
+    - Code would cause runtime errors
+    - Violations break critical conventions
+    - Used in CI/CD pipelines
+    - Pre-commit hooks
+    
+    ```javascript
+    {
+      rules: {
+        "no-undef": "error",          // Undefined variables
+        "no-unused-vars": "error",    // Unused variables
+        "semi": "error"                // Missing semicolons
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Warn">
+    **Use for Non-Critical Issues**
+    
+    Set rules to `"warn"` when:
+    - Gradually introducing a new rule
+    - Rule might have false positives
+    - Violations are code smells, not errors
+    - Want visibility without blocking
+    
+    ```javascript
+    {
+      rules: {
+        "no-console": "warn",         // Console statements
+        "prefer-const": "warn",       // Could use const
+        "no-unused-expressions": "warn" // Unused expressions
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Off">
+    **Use to Disable Rules**
+    
+    Set rules to `"off"` when:
+    - Rule doesn't apply to your project
+    - Using a different tool for that check
+    - Conflicts with other rules
+    - Not relevant for your code style
+    
+    ```javascript
+    {
+      rules: {
+        "no-console": "off",          // Allow console
+        "require-jsdoc": "off",       // No JSDoc required
+        "max-len": "off"              // No line length limit
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Configuration Methods
+
+### Configuration Files
+
+The primary way to configure rules is in your `eslint.config.js` file:
+
+```javascript eslint.config.js
+import { defineConfig } from "eslint/config";
+
+export default defineConfig([
+  {
+    rules: {
+      // String format
+      "semi": "error",
+      "quotes": "warn",
+      "no-console": "off",
+      
+      // Numeric format
+      "eqeqeq": 2,
+      "curly": 1,
+      "no-alert": 0
+    }
+  }
+]);
+```
+
+<Info>
+String format (`"error"`, `"warn"`, `"off"`) is recommended for better readability.
+</Info>
+
+### Configuration Comments
+
+You can also configure rules using inline comments:
+
+```javascript
+/* eslint eqeqeq: "off", curly: "error" */
+
+// Or with numeric values
+/* eslint eqeqeq: 0, curly: 2 */
+```
+
+<Warning>
+Configuration comments have the highest priority and override all configuration file settings.
+</Warning>
+
+## Rule Options
+
+Many rules accept additional options to customize their behavior:
+
+### Basic Syntax
+
+```javascript
+{
+  rules: {
+    // Severity only
+    "semi": "error",
+    
+    // Severity with options (array format)
+    "semi": ["error", "always"],
+    "quotes": ["error", "double"],
+    "comma-dangle": ["error", "never"]
+  }
+}
+```
+
+<Tip>
+The first element in the array is always the severity level. All subsequent elements are options for the rule.
+</Tip>
+
+### Object Options
+
+Some rules accept object options:
+
+```javascript
+{
+  rules: {
+    "no-unused-vars": ["error", {
+      "vars": "all",
+      "args": "after-used",
+      "ignoreRestSiblings": true,
+      "argsIgnorePattern": "^_"
+    }],
+    
+    "prefer-const": ["error", {
+      "destructuring": "any",
+      "ignoreReadBeforeAssign": true
+    }]
+  }
+}
+```
+
+### Multiple Options
+
+Rules can accept multiple option values:
+
+```javascript
+{
+  rules: {
+    "quotes": ["error", "double", {
+      "avoidEscape": true,
+      "allowTemplateLiterals": true
+    }],
+    
+    "indent": ["error", 2, {
+      "SwitchCase": 1,
+      "VariableDeclarator": "first"
+    }]
+  }
+}
+```
+
+## Common Rule Examples
+
+<AccordionGroup>
+<Accordion title="Semi (Semicolons)" icon="semicolon">
+
+```javascript
+{
+  rules: {
+    // Always require semicolons
+    "semi": ["error", "always"],
+    
+    // Never allow semicolons
+    "semi": ["error", "never"],
+    
+    // With options
+    "semi": ["error", "never", {
+      "beforeStatementContinuationChars": "always"
+    }]
+  }
+}
+```
+
+**Examples:**
+```javascript
+// "always"
+const x = 5;  // ✅
+const y = 10  // ❌
+
+// "never"
+const x = 5;  // ❌
+const y = 10  // ✅
+```
+
+</Accordion>
+
+<Accordion title="Quotes" icon="quote-left">
+
+```javascript
+{
+  rules: {
+    // Double quotes
+    "quotes": ["error", "double"],
+    
+    // Single quotes
+    "quotes": ["error", "single"],
+    
+    // Backticks
+    "quotes": ["error", "backtick"],
+    
+    // With options
+    "quotes": ["error", "double", {
+      "avoidEscape": true,
+      "allowTemplateLiterals": true
+    }]
+  }
+}
+```
+
+**Examples:**
+```javascript
+// "double"
+const msg = "hello";  // ✅
+const msg = 'hello';  // ❌
+
+// "single"
+const msg = 'hello';  // ✅
+const msg = "hello";  // ❌
+```
+
+</Accordion>
+
+<Accordion title="No Unused Vars" icon="trash">
+
+```javascript
+{
+  rules: {
+    "no-unused-vars": ["error", {
+      "vars": "all",           // Check all variables
+      "args": "after-used",     // Check args after last used
+      "ignoreRestSiblings": true,
+      "argsIgnorePattern": "^_", // Ignore args starting with _
+      "varsIgnorePattern": "^_",  // Ignore vars starting with _
+      "caughtErrors": "all"
+    }]
+  }
+}
+```
+
+**Examples:**
+```javascript
+// Error: x is defined but never used
+const x = 5;
+
+// OK: _x starts with underscore (ignored)
+const _x = 5;
+
+// OK: Used in return
+const y = 10;
+return y;
+```
+
+</Accordion>
+
+<Accordion title="Prefer Const" icon="lock">
+
+```javascript
+{
+  rules: {
+    "prefer-const": ["error", {
+      "destructuring": "any",  // "any" or "all"
+      "ignoreReadBeforeAssign": false
+    }]
+  }
+}
+```
+
+**Examples:**
+```javascript
+// Error: Never reassigned, use const
+let x = 5;
+console.log(x);
+
+// OK: Reassigned
+let y = 5;
+y = 10;
+
+// OK: Use const
+const z = 5;
+console.log(z);
+```
+
+</Accordion>
+
+<Accordion title="Max Length" icon="ruler-horizontal">
+
+```javascript
+{
+  rules: {
+    "max-len": ["error", {
+      "code": 80,
+      "tabWidth": 2,
+      "comments": 100,
+      "ignoreUrls": true,
+      "ignoreStrings": true,
+      "ignoreTemplateLiterals": true,
+      "ignoreRegExpLiterals": true
+    }]
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="Indent" icon="indent">
+
+```javascript
+{
+  rules: {
+    "indent": ["error", 2, {
+      "SwitchCase": 1,
+      "VariableDeclarator": "first",
+      "FunctionDeclaration": {
+        "parameters": "first",
+        "body": 1
+      },
+      "ArrayExpression": "first",
+      "ObjectExpression": "first"
+    }]
+  }
+}
+```
+
+**Options:**
+- `2` or `4` - Number of spaces
+- `"tab"` - Use tabs
+
+</Accordion>
+</AccordionGroup>
+
+## Inline Configuration Comments
+
+### Configure Rules Inline
+
+Set rule configuration for a portion of a file:
+
+```javascript
+/* eslint quotes: ["error", "double"], curly: 2 */
+
+function example() {
+  const msg = "hello";  // Must use double quotes
+}
+```
+
+### With Descriptions
+
+Add descriptions to explain why configuration is needed:
+
+```javascript
+/* eslint eqeqeq: "off", curly: "error" -- 
+   Disable eqeqeq for legacy code compatibility */
+
+if (x == null) { } // OK
+```
+
+The description must:
+- Come after the configuration
+- Be separated by two or more consecutive `-` characters
+
+## Disabling Rules
+
+### Disable All Rules
+
+<Tabs>
+  <Tab title="Block">
+    ```javascript
+    /* eslint-disable */
+    
+    alert("foo");  // No rules apply
+    console.log("bar");
+    
+    /* eslint-enable */
+    ```
+  </Tab>
+  <Tab title="Entire File">
+    ```javascript
+    /* eslint-disable */
+    
+    // All rules disabled for entire file
+    alert("foo");
+    console.log("bar");
+    ```
+  </Tab>
+  <Tab title="Single Line">
+    ```javascript
+    alert("foo"); // eslint-disable-line
+    
+    // eslint-disable-next-line
+    alert("foo");
+    
+    /* eslint-disable-next-line */
+    alert("foo");
+    ```
+  </Tab>
+</Tabs>
+
+### Disable Specific Rules
+
+<Tabs>
+  <Tab title="Block">
+    ```javascript
+    /* eslint-disable no-alert, no-console */
+    
+    alert("foo");
+    console.log("bar");
+    
+    /* eslint-enable no-alert, no-console */
+    ```
+  </Tab>
+  <Tab title="Entire File">
+    ```javascript
+    /* eslint-disable no-alert */
+    
+    // no-alert disabled for entire file
+    alert("foo");
+    alert("bar");
+    ```
+  </Tab>
+  <Tab title="Single Line">
+    ```javascript
+    alert("foo"); // eslint-disable-line no-alert
+    
+    // eslint-disable-next-line no-alert
+    alert("foo");
+    
+    // Multiple rules
+    alert("foo"); // eslint-disable-line no-alert, quotes, semi
+    ```
+  </Tab>
+</Tabs>
+
+### Disable vs Turn Off
+
+<Tabs>
+  <Tab title="eslint-disable">
+    **Temporary Disable**
+    
+    ```javascript
+    /* eslint-disable no-console */
+    console.log("debug");
+    /* eslint-enable no-console */
+    
+    console.log("error");  // Rule applies again
+    ```
+    
+    Use for temporarily disabling rules in specific code sections.
+  </Tab>
+  <Tab title="Rule: off">
+    **Permanent Disable**
+    
+    ```javascript
+    /* eslint no-console: "off" */
+    
+    console.log("debug");
+    console.log("error");  // Rule never applies
+    ```
+    
+    Use to permanently disable a rule (cannot be re-enabled).
+  </Tab>
+</Tabs>
+
+<Warning>
+**Use disable comments with caution:**
+- Document the reason with a description
+- Prefer configuration files over inline comments
+- Create follow-up tasks for temporary disables
+- Review disable comments during code reviews
+</Warning>
+
+## Rules from Plugins
+
+When using plugin rules, prefix the rule ID with the plugin namespace:
+
+```javascript
+import reactPlugin from "eslint-plugin-react";
+import typescriptPlugin from "@typescript-eslint/eslint-plugin";
+import { defineConfig } from "eslint/config";
+
+export default defineConfig([
+  {
+    files: ["**/*.jsx"],
+    plugins: {
+      react: reactPlugin
+    },
+    rules: {
+      // Format: "plugin-namespace/rule-name"
+      "react/jsx-uses-react": "error",
+      "react/jsx-uses-vars": "error",
+      "react/prop-types": "warn"
+    }
+  },
+  {
+    files: ["**/*.ts"],
+    plugins: {
+      "@typescript-eslint": typescriptPlugin
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/explicit-function-return-type": "off"
+    }
+  }
+]);
+```
+
+### In Configuration Comments
+
+```javascript
+/* eslint "react/jsx-uses-react": "error" */
+
+import React from 'react';
+```
+
+<Info>
+Plugins must be loaded in the configuration file before their rules can be used in comments.
+</Info>
+
+## Rule Cascading
+
+When multiple configuration objects match a file, their rules are merged:
+
+```javascript
+export default [
+  {
+    files: ["**/*.js"],
+    rules: {
+      "semi": ["error", "never"],
+      "quotes": ["error", "single"]
+    }
+  },
+  {
+    files: ["**/*.js"],
+    rules: {
+      "semi": ["warn", "always"],  // Overrides previous
+      "no-console": "off"            // Adds new rule
+    }
+  }
+];
+
+// Final configuration for .js files:
+// {
+//   "semi": ["warn", "always"],
+//   "quotes": ["error", "single"],
+//   "no-console": "off"
+// }
+```
+
+### Partial Override
+
+You can override just the severity while keeping options:
+
+```javascript
+export default [
+  {
+    rules: {
+      "semi": ["error", "never"]
+    }
+  },
+  {
+    rules: {
+      "semi": "warn"  // Only changes severity to warn
+    }
+  }
+];
+
+// Result: ["warn", "never"]
+```
+
+## Disabling Inline Configuration
+
+Prevent inline comments from modifying configuration:
+
+```javascript
+import { defineConfig } from "eslint/config";
+
+export default defineConfig([
+  {
+    linterOptions: {
+      noInlineConfig: true
+    },
+    rules: {
+      "no-unused-expressions": "error"
+    }
+  }
+]);
+```
+
+With this setting, these comments are ignored:
+- `/*eslint-disable*/`
+- `/*eslint-enable*/`
+- `/*global*/`
+- `/*eslint*/`
+- `// eslint-disable-line`
+- `// eslint-disable-next-line`
+
+## Reporting Unused Directives
+
+### Unused Disable Directives
+
+Report `eslint-disable` comments that don't disable any violations:
+
+```javascript
+import { defineConfig } from "eslint/config";
+
+export default defineConfig([
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: "error"
+    }
+  }
+]);
+```
+
+```javascript
+// This line would not trigger no-console,
+// so the disable comment is unnecessary
+/* eslint-disable-next-line no-console */
+const x = 5;
+```
+
+<Info>
+**Default:** `"warn"`
+**Options:** `"off"`, `"warn"`, `"error"` (or `0`, `1`, `2`)
+</Info>
+
+### Unused Inline Configs
+
+Report inline config comments that match the current configuration:
+
+```javascript
+import { defineConfig } from "eslint/config";
+
+export default defineConfig([
+  {
+    linterOptions: {
+      reportUnusedInlineConfigs: "warn"
+    },
+    rules: {
+      "semi": "error"
+    }
+  }
+]);
+```
+
+```javascript
+// Unnecessary - semi is already "error" in config
+/* eslint semi: "error" */
+```
+
+<Info>
+**Default:** `"off"`
+**Options:** `"off"`, `"warn"`, `"error"` (or `0`, `1`, `2`)
+</Info>
+
+## File-Specific Rules
+
+Apply different rules to different file patterns:
+
+```javascript
+export default [
+  // Base rules for all JS files
+  {
+    files: ["**/*.js"],
+    rules: {
+      "no-console": "error",
+      "prefer-const": "error"
+    }
+  },
+  
+  // Relax rules for test files
+  {
+    files: ["**/*.test.js", "**/*.spec.js"],
+    rules: {
+      "no-console": "off",
+      "no-unused-expressions": "off"
+    }
+  },
+  
+  // Strict rules for production code
+  {
+    files: ["src/**/*.js"],
+    ignores: ["**/*.test.js"],
+    rules: {
+      "no-console": "error",
+      "no-debugger": "error",
+      "complexity": ["error", 10]
+    }
+  }
+];
+```
+
+## Complete Example
+
+```javascript eslint.config.js
+import { defineConfig } from "eslint/config";
+import js from "@eslint/js";
+import reactPlugin from "eslint-plugin-react";
+
+export default defineConfig([
+  // Base configuration
+  {
+    files: ["**/*.js", "**/*.jsx"],
+    plugins: { js },
+    extends: ["js/recommended"],
+    linterOptions: {
+      reportUnusedDisableDirectives: "warn",
+      reportUnusedInlineConfigs: "warn"
+    },
+    rules: {
+      // Error level rules
+      "no-unused-vars": ["error", {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }],
+      "semi": ["error", "always"],
+      "quotes": ["error", "double"],
+      
+      // Warning level rules
+      "no-console": "warn",
+      "prefer-const": "warn",
+      
+      // Disabled rules
+      "no-debugger": "off",
+      "max-len": "off"
+    }
+  },
+  
+  // React-specific configuration
+  {
+    files: ["**/*.jsx"],
+    plugins: {
+      react: reactPlugin
+    },
+    rules: {
+      "react/jsx-uses-react": "error",
+      "react/jsx-uses-vars": "error",
+      "react/prop-types": "warn"
+    }
+  },
+  
+  // Test files configuration
+  {
+    files: ["**/*.test.js", "**/*.spec.js"],
+    rules: {
+      "no-console": "off",
+      "no-unused-expressions": "off",
+      "max-lines-per-function": "off"
+    }
+  }
+]);
+```
+
+## Best Practices
+
+<AccordionGroup>
+<Accordion title="Start with Recommended" icon="star">
+
+Use recommended configs as a base:
+
+```javascript
+import js from "@eslint/js";
+import { defineConfig } from "eslint/config";
+
+export default defineConfig([
+  {
+    files: ["**/*.js"],
+    plugins: { js },
+    extends: ["js/recommended"],
+    rules: {
+      // Override or add rules
+    }
+  }
+]);
+```
+
+</Accordion>
+
+<Accordion title="Use Consistent Severity" icon="balance-scale">
+
+Establish team conventions:
+
+- **Error:** Must fix (runtime issues, security, critical)
+- **Warn:** Should fix (code smells, best practices)
+- **Off:** Not applicable
+
+</Accordion>
+
+<Accordion title="Document Rule Decisions" icon="file-lines">
+
+Add comments explaining non-obvious choices:
+
+```javascript
+{
+  rules: {
+    // Allow console in development
+    "no-console": process.env.NODE_ENV === "production" ? "error" : "off",
+    
+    // Team prefers single quotes
+    "quotes": ["error", "single"],
+    
+    // Disabled due to false positives with TypeScript
+    "no-undef": "off"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="Minimize Inline Disables" icon="minimize">
+
+Prefer configuration files over inline comments:
+
+```javascript
+// ❌ Bad
+function test() {
+  /* eslint-disable no-console */
+  console.log("test");
+  /* eslint-enable no-console */
+}
+
+// ✅ Good - in config file
+{
+  files: ["**/*.test.js"],
+  rules: {
+    "no-console": "off"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="Review Rule Violations" icon="clipboard-check">
+
+Regularly review and address:
+
+- Unused disable directives
+- Frequently disabled rules
+- Rules with many violations
+- Outdated rule configurations
+
+</Accordion>
+</AccordionGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="./configuration">
+    Learn about configuration files and objects
+  </Card>
+  <Card title="Core Concepts" icon="book" href="./core-concepts">
+    Understanding rules, plugins, and more
+  </Card>
+  <Card title="Command Line" icon="terminal" href="./command-line">
+    CLI options including --rule
+  </Card>
+  <Card title="Built-in Rules" icon="list" href="/rules">
+    Browse all available ESLint rules
+  </Card>
+</CardGroup>

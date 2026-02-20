@@ -1,0 +1,803 @@
+---
+title: Troubleshooting ESLint
+description: Solutions to common ESLint errors, configuration issues, performance problems, and integration challenges
+---
+
+# Troubleshooting ESLint
+
+Quick solutions to common ESLint problems, errors, and configuration issues.
+
+<Tip>
+Use `Ctrl+F` (or `Cmd+F`) to search for your specific error message on this page.
+</Tip>
+
+---
+
+## Installation Issues
+
+<AccordionGroup>
+  <Accordion title="Error: Cannot find module 'eslint'">
+    **Cause:** ESLint is not installed or not in your PATH.
+    
+    **Solution:**
+    ```bash
+    # Install ESLint locally
+    npm install eslint --save-dev
+    
+    # Or globally (not recommended)
+    npm install -g eslint
+    
+    # Verify installation
+    npx eslint --version
+    ```
+    
+    <Warning>
+    Always install ESLint as a dev dependency in your project, not globally. This ensures version consistency across your team.
+    </Warning>
+  </Accordion>
+  
+  <Accordion title="Error: peer dependency warning for eslint">
+    **Cause:** A plugin requires a different ESLint version than you have installed.
+    
+    **Solution:**
+    ```bash
+    # Check ESLint version
+    npm list eslint
+    
+    # Update ESLint to match plugin requirements
+    npm install eslint@^10.0.0 --save-dev
+    
+    # Or update the plugin
+    npm install eslint-plugin-react@latest --save-dev
+    ```
+    
+    **For pnpm users:**
+    ```bash
+    # Create .npmrc with:
+    auto-install-peers=true
+    node-linker=hoisted
+    ```
+  </Accordion>
+  
+  <Accordion title="Error: Cannot find module '@eslint/js'">
+    **Cause:** The `@eslint/js` package is not installed.
+    
+    **Solution:**
+    ```bash
+    npm install @eslint/js --save-dev
+    ```
+    
+    In your config:
+    ```javascript
+    import js from "@eslint/js";
+    
+    export default [
+      js.configs.recommended,
+      // your config
+    ];
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Configuration Issues
+
+<AccordionGroup>
+  <Accordion title="Error: ESLint configuration not found">
+    **Cause:** ESLint v10 cannot find `eslint.config.js`.
+    
+    **Solutions:**
+    
+    **1. Create config file:**
+    ```bash
+    npm init @eslint/config@latest
+    ```
+    
+    **2. Ensure correct filename:**
+    - ✅ `eslint.config.js`
+    - ✅ `eslint.config.mjs`
+    - ✅ `eslint.config.cjs`
+    - ❌ `.eslintrc` (no longer supported in v10)
+    - ❌ `.eslintrc.json` (no longer supported in v10)
+    
+    **3. Verify file location:**
+    ```bash
+    # Config should be in project root or parent directories
+    ls -la eslint.config.js
+    ```
+    
+    **4. Specify config explicitly:**
+    ```bash
+    npx eslint --config ./path/to/eslint.config.js .
+    ```
+  </Accordion>
+  
+  <Accordion title="Error: /* eslint-env */ comments are no longer supported">
+    **Cause:** You're using `/* eslint-env */` comments, which are not supported in ESLint v10.
+    
+    **Solution:**
+    
+    **Before (ESLint v8):**
+    ```javascript
+    /* eslint-env node, es6 */
+    const fs = require('fs');
+    ```
+    
+    **After (ESLint v10):**
+    ```javascript
+    // Remove the comment from your file
+    const fs = require('fs');
+    ```
+    
+    **In eslint.config.js:**
+    ```javascript
+    import globals from "globals";
+    
+    export default [
+      {
+        languageOptions: {
+          globals: {
+            ...globals.node,
+            ...globals.es2021
+          }
+        }
+      }
+    ];
+    ```
+  </Accordion>
+  
+  <Accordion title="Error: Invalid configuration object">
+    **Cause:** Your `eslint.config.js` has a syntax or structure error.
+    
+    **Common mistakes:**
+    
+    **1. Not exporting an array:**
+    ```javascript
+    // ❌ Wrong
+    export default {
+      rules: { "no-console": "error" }
+    };
+    
+    // ✅ Correct
+    export default [
+      {
+        rules: { "no-console": "error" }
+      }
+    ];
+    ```
+    
+    **2. Mixing old and new config formats:**
+    ```javascript
+    // ❌ Wrong (old format in flat config)
+    export default [
+      {
+        extends: ["eslint:recommended"] // No 'extends' in flat config
+      }
+    ];
+    
+    // ✅ Correct
+    import js from "@eslint/js";
+    export default [
+      js.configs.recommended
+    ];
+    ```
+    
+    **Debug your config:**
+    ```bash
+    node eslint.config.js
+    ```
+  </Accordion>
+  
+  <Accordion title="Rules not applying to my files">
+    **Cause:** File patterns don't match or files are ignored.
+    
+    **Solutions:**
+    
+    **1. Check file patterns:**
+    ```javascript
+    export default [
+      {
+        files: ["**/*.js", "**/*.jsx"], // Make sure this matches your files
+        rules: {
+          "no-console": "error"
+        }
+      }
+    ];
+    ```
+    
+    **2. Check ignored files:**
+    ```javascript
+    export default [
+      {
+        ignores: ["dist/**", "build/**", "node_modules/**"]
+      }
+    ];
+    ```
+    
+    **3. Debug config for a specific file:**
+    ```bash
+    npx eslint --print-config src/app.js
+    ```
+    
+    **4. Verify file is being linted:**
+    ```bash
+    npx eslint src/app.js --debug
+    ```
+  </Accordion>
+  
+  <Accordion title="Error: Failed to load parser">
+    **Cause:** Custom parser (like `@typescript-eslint/parser`) is not installed or configured incorrectly.
+    
+    **Solution:**
+    
+    **1. Install parser:**
+    ```bash
+    npm install @typescript-eslint/parser --save-dev
+    ```
+    
+    **2. Configure correctly:**
+    ```javascript
+    import tsParser from "@typescript-eslint/parser";
+    
+    export default [
+      {
+        files: ["**/*.ts"],
+        languageOptions: {
+          parser: tsParser, // Not as a string
+          parserOptions: {
+            project: "./tsconfig.json"
+          }
+        }
+      }
+    ];
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Runtime Errors
+
+<AccordionGroup>
+  <Accordion title="Error: 'context.getFilename' is not a function">
+    **Cause:** Using deprecated `context` methods removed in ESLint v10.
+    
+    **Solution:**
+    
+    **Before:**
+    ```javascript
+    module.exports = {
+      create(context) {
+        const filename = context.getFilename();
+        const sourceCode = context.getSourceCode();
+      }
+    };
+    ```
+    
+    **After:**
+    ```javascript
+    module.exports = {
+      create(context) {
+        const filename = context.filename;
+        const sourceCode = context.sourceCode;
+      }
+    };
+    ```
+    
+    **Full migration table:**
+    | Removed | Replacement |
+    |---------|-------------|
+    | `context.getCwd()` | `context.cwd` |
+    | `context.getFilename()` | `context.filename` |
+    | `context.getPhysicalFilename()` | `context.physicalFilename` |
+    | `context.getSourceCode()` | `context.sourceCode` |
+  </Accordion>
+  
+  <Accordion title="Error: Unexpected token 'export'">
+    **Cause:** Your config file uses ESM syntax but Node.js is treating it as CommonJS.
+    
+    **Solutions:**
+    
+    **1. Rename to .mjs:**
+    ```bash
+    mv eslint.config.js eslint.config.mjs
+    ```
+    
+    **2. Add "type": "module" to package.json:**
+    ```json
+    {
+      "type": "module"
+    }
+    ```
+    
+    **3. Or use CommonJS:**
+    ```javascript
+    // eslint.config.cjs
+    const js = require("@eslint/js");
+    
+    module.exports = [
+      js.configs.recommended
+    ];
+    ```
+  </Accordion>
+  
+  <Accordion title="Error: Parsing error: Unexpected token">
+    **Cause:** Parser cannot understand your code syntax.
+    
+    **Solutions:**
+    
+    **For TypeScript:**
+    ```bash
+    npm install @typescript-eslint/parser --save-dev
+    ```
+    
+    ```javascript
+    import tsParser from "@typescript-eslint/parser";
+    
+    export default [
+      {
+        files: ["**/*.ts", "**/*.tsx"],
+        languageOptions: {
+          parser: tsParser
+        }
+      }
+    ];
+    ```
+    
+    **For JSX:**
+    ```javascript
+    export default [
+      {
+        files: ["**/*.jsx", "**/*.tsx"],
+        languageOptions: {
+          parserOptions: {
+            ecmaFeatures: {
+              jsx: true
+            }
+          }
+        }
+      }
+    ];
+    ```
+    
+    **For modern JavaScript:**
+    ```javascript
+    export default [
+      {
+        languageOptions: {
+          ecmaVersion: "latest",
+          sourceType: "module"
+        }
+      }
+    ];
+    ```
+  </Accordion>
+  
+  <Accordion title="Error: Failed to load plugin">
+    **Cause:** Plugin not installed or imported incorrectly.
+    
+    **Solution:**
+    
+    **1. Install plugin:**
+    ```bash
+    npm install eslint-plugin-react --save-dev
+    ```
+    
+    **2. Import correctly:**
+    ```javascript
+    import react from "eslint-plugin-react";
+    
+    export default [
+      {
+        plugins: {
+          react // Not as a string
+        },
+        rules: {
+          "react/prop-types": "error"
+        }
+      }
+    ];
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Performance Issues
+
+<AccordionGroup>
+  <Accordion title="ESLint is very slow">
+    **Causes & Solutions:**
+    
+    **1. Enable caching:**
+    ```bash
+    npx eslint --cache .
+    ```
+    
+    **2. Limit file scope:**
+    ```javascript
+    export default [
+      {
+        files: ["src/**/*.js"],
+        ignores: [
+          "dist/**",
+          "build/**",
+          "node_modules/**",
+          "**/*.min.js"
+        ]
+      }
+    ];
+    ```
+    
+    **3. Disable expensive rules:**
+    ```javascript
+    export default [
+      {
+        rules: {
+          // These require type checking (slow)
+          "@typescript-eslint/no-floating-promises": "off",
+          "@typescript-eslint/no-misused-promises": "off"
+        }
+      }
+    ];
+    ```
+    
+    **4. Use faster glob patterns:**
+    ```bash
+    # Slow
+    npx eslint "**/*.js"
+    
+    # Faster
+    npx eslint src/
+    ```
+    
+    **5. Parallelize in CI:**
+    ```bash
+    # Install
+    npm install eslint-parallel --save-dev
+    
+    # Run
+    npx eslint-parallel 'src/**/*.js'
+    ```
+  </Accordion>
+  
+  <Accordion title="Out of memory errors">
+    **Cause:** Large codebase or complex rules exceeding Node.js memory limit.
+    
+    **Solutions:**
+    
+    **1. Increase Node.js memory:**
+    ```bash
+    NODE_OPTIONS="--max-old-space-size=4096" npx eslint .
+    ```
+    
+    **2. Lint in batches:**
+    ```bash
+    npx eslint src/componentA/
+    npx eslint src/componentB/
+    ```
+    
+    **3. Reduce file scope:**
+    ```javascript
+    export default [
+      {
+        ignores: ["**/*.spec.js", "**/*.test.js"]
+      }
+    ];
+    ```
+  </Accordion>
+  
+  <Accordion title="Linting hangs or times out">
+    **Cause:** Infinite loop in a rule or extremely complex file.
+    
+    **Solutions:**
+    
+    **1. Identify problematic file:**
+    ```bash
+    npx eslint --debug . 2>&1 | grep "Linting"
+    ```
+    
+    **2. Skip specific file:**
+    ```javascript
+    export default [
+      {
+        ignores: ["src/problematic-file.js"]
+      }
+    ];
+    ```
+    
+    **3. Update plugins:**
+    ```bash
+    npm update eslint-plugin-*
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Editor Integration Issues
+
+<AccordionGroup>
+  <Accordion title="VS Code: ESLint not working">
+    **Solutions:**
+    
+    **1. Install ESLint extension:**
+    - Install "ESLint" by Microsoft from VS Code marketplace
+    
+    **2. Check output panel:**
+    - View → Output → Select "ESLint" from dropdown
+    - Look for error messages
+    
+    **3. Restart ESLint server:**
+    - `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
+    - Type "ESLint: Restart ESLint Server"
+    
+    **4. Configure settings.json:**
+    ```json
+    {
+      "eslint.experimental.useFlatConfig": true,
+      "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
+      ]
+    }
+    ```
+    
+    **5. Check workspace settings:**
+    ```json
+    {
+      "eslint.workingDirectories": [
+        { "mode": "auto" }
+      ]
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="WebStorm/IntelliJ: ESLint not working">
+    **Solutions:**
+    
+    **1. Enable ESLint:**
+    - Settings → Languages & Frameworks → JavaScript → Code Quality Tools → ESLint
+    - Check "Automatic ESLint configuration"
+    
+    **2. Verify Node.js interpreter:**
+    - Settings → Languages & Frameworks → Node.js
+    - Ensure correct Node.js version (20.19+)
+    
+    **3. Specify config file:**
+    - ESLint settings → Configuration file
+    - Point to `eslint.config.js`
+    
+    **4. Clear caches:**
+    - File → Invalidate Caches / Restart
+  </Accordion>
+  
+  <Accordion title="Conflicting Prettier/ESLint formatting">
+    **Cause:** Both tools trying to format code differently.
+    
+    **Solution:**
+    
+    **1. Use Prettier for formatting, ESLint for logic:**
+    ```bash
+    npm install prettier eslint-config-prettier --save-dev
+    ```
+    
+    **2. Disable ESLint formatting rules:**
+    ```javascript
+    import eslintConfigPrettier from "eslint-config-prettier";
+    
+    export default [
+      // Your config
+      eslintConfigPrettier // Must be last
+    ];
+    ```
+    
+    **3. Run separately:**
+    ```json
+    {
+      "scripts": {
+        "lint": "eslint .",
+        "format": "prettier --write ."
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## CI/CD Issues
+
+<AccordionGroup>
+  <Accordion title="ESLint passes locally but fails in CI">
+    **Causes & Solutions:**
+    
+    **1. Different Node.js versions:**
+    ```yaml
+    # .github/workflows/lint.yml
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20.19' # Match your local version
+    ```
+    
+    **2. Missing dependencies:**
+    ```yaml
+    - run: npm ci # Use 'ci' not 'install'
+    - run: npm run lint
+    ```
+    
+    **3. Cached node_modules:**
+    ```yaml
+    - uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+    ```
+    
+    **4. Platform-specific line endings:**
+    ```javascript
+    export default [
+      {
+        rules: {
+          "linebreak-style": ["error", "unix"]
+        }
+      }
+    ];
+    ```
+  </Accordion>
+  
+  <Accordion title="Exit code 0 even with errors">
+    **Cause:** Errors are configured as warnings.
+    
+    **Solutions:**
+    
+    **1. Use --max-warnings 0:**
+    ```bash
+    npx eslint --max-warnings 0 .
+    ```
+    
+    **2. Change warnings to errors:**
+    ```javascript
+    export default [
+      {
+        rules: {
+          "no-console": "error" // not "warn"
+        }
+      }
+    ];
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Migration Issues
+
+<AccordionGroup>
+  <Accordion title="Upgrading from v9 to v10">
+    See the complete [Migration Guide](/guides/migrate-to-10) for step-by-step instructions.
+    
+    **Quick checklist:**
+    - ✅ Node.js v20.19.0+
+    - ✅ Remove `v10_config_lookup_from_file` flag
+    - ✅ Remove `.eslintrc` files
+    - ✅ Remove `/* eslint-env */` comments
+    - ✅ Update `context` methods in custom rules
+    - ✅ Update `SourceCode` methods
+  </Accordion>
+  
+  <Accordion title="Converting .eslintrc to flat config">
+    **Old format (.eslintrc.json):**
+    ```json
+    {
+      "extends": ["eslint:recommended"],
+      "env": { "node": true },
+      "rules": { "no-console": "off" }
+    }
+    ```
+    
+    **New format (eslint.config.js):**
+    ```javascript
+    import js from "@eslint/js";
+    import globals from "globals";
+    
+    export default [
+      js.configs.recommended,
+      {
+        languageOptions: {
+          globals: globals.node
+        },
+        rules: {
+          "no-console": "off"
+        }
+      }
+    ];
+    ```
+    
+    **Use migration tool:**
+    ```bash
+    npx @eslint/migrate-config .eslintrc.json
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Debugging Commands
+
+<CodeGroup>
+```bash Print config for file
+npx eslint --print-config src/app.js
+```
+
+```bash Debug mode
+npx eslint --debug src/
+```
+
+```bash List all rules
+npx eslint --print-config src/app.js | grep rules -A 100
+```
+
+```bash Check version
+npx eslint --version
+```
+
+```bash Validate config file
+node eslint.config.js
+```
+</CodeGroup>
+
+---
+
+## Getting Help
+
+<CardGroup cols={2}>
+  <Card title="GitHub Discussions" icon="comments" href="https://github.com/eslint/eslint/discussions">
+    Ask questions and get help from the community
+  </Card>
+  
+  <Card title="Discord Server" icon="discord" href="https://eslint.org/chat">
+    Real-time chat with ESLint users and maintainers
+  </Card>
+  
+  <Card title="Stack Overflow" icon="stack-overflow" href="https://stackoverflow.com/questions/tagged/eslint">
+    Search existing questions or ask new ones
+  </Card>
+  
+  <Card title="Report a Bug" icon="bug" href="https://github.com/eslint/eslint/issues/new/choose">
+    File an issue on GitHub
+  </Card>
+</CardGroup>
+
+---
+
+## Common Error Messages Reference
+
+<Warning>
+Quick reference for frequently encountered errors:
+</Warning>
+
+| Error Message | Cause | Solution |
+|---------------|-------|----------|
+| `Configuration not found` | No `eslint.config.js` | Create config file |
+| `Failed to load parser` | Parser not installed | `npm install parser` |
+| `Failed to load plugin` | Plugin not installed | `npm install plugin` |
+| `/* eslint-env */ not supported` | Using v8 syntax | Remove comment, use config |
+| `context.getFilename is not a function` | Deprecated API | Use `context.filename` |
+| `Invalid configuration object` | Syntax error in config | Check config syntax |
+| `Unexpected token 'export'` | ESM/CJS mismatch | Rename to `.mjs` or add `"type": "module"` |
+| `Parsing error` | Parser configuration issue | Configure correct parser |
+
+<Tip>
+Still stuck? Include these details when asking for help:
+
+- ESLint version (`npx eslint --version`)
+- Node.js version (`node --version`)
+- Package manager (npm/pnpm/yarn)
+- Full error message
+- Relevant config file
+- Example code that triggers the issue
+</Tip>

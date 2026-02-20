@@ -1,0 +1,290 @@
+---
+title: no-unused-private-class-members
+description: Disallow unused private class members
+---
+
+# no-unused-private-class-members
+
+Private class members that are declared but never used are likely an error due to incomplete refactoring. They take up space and can confuse readers.
+
+<Note>
+**Rule Type:** Problem  
+**Fixable:** No
+</Note>
+
+## Rule Details
+
+This rule reports unused private class members:
+
+- **Private fields/methods**: Unused if their value is never read
+- **Private accessors**: Unused if never accessed (read or written)
+
+## Examples
+
+### Incorrect Code
+
+```js
+// Unused private field
+class A {
+    #unusedMember = 5; // Never accessed
+}
+
+// Only written, never read
+class B {
+    #usedOnlyInWrite = 5;
+    method() {
+        this.#usedOnlyInWrite = 42; // Write only - still unused
+    }
+}
+
+// Only updates itself
+class C {
+    #usedOnlyToUpdateItself = 5;
+    method() {
+        this.#usedOnlyToUpdateItself++; // Read and write same value
+    }
+}
+
+// Unused private method
+class D {
+    #unusedMethod() {} // Never called
+}
+
+// Unused accessor
+class E {
+    get #unusedAccessor() {}
+    set #unusedAccessor(value) {}
+}
+```
+
+### Correct Code
+
+```js
+// Private field that's read
+class A {
+    #usedMember = 42;
+    method() {
+        return this.#usedMember; // Value is read
+    }
+}
+
+// Private method that's called
+class B {
+    #usedMethod() {
+        return 42;
+    }
+    anotherMethod() {
+        return this.#usedMethod(); // Method is called
+    }
+}
+
+// Private accessor that's used
+class C {
+    #value;
+    
+    get #usedAccessor() {
+        return this.#value;
+    }
+    set #usedAccessor(value) {
+        this.#value = value;
+    }
+    
+    method() {
+        this.#usedAccessor = 42; // Accessor is used
+    }
+}
+```
+
+## Understanding "Used"
+
+### Fields and Methods Must Be Read
+
+```js
+class Example {
+    #counter = 0;
+    
+    increment() {
+        this.#counter++; // Used: reads old value, writes new value
+    }
+    
+    reset() {
+        this.#counter = 0; // Unused: only writes, never reads result
+    }
+}
+```
+
+### Accessors Must Be Accessed
+
+```js
+class Example {
+    #value;
+    
+    // Both getter and setter must be accessed
+    get #accessor() { return this.#value; }
+    set #accessor(v) { this.#value = v; }
+    
+    method() {
+        // Either reading OR writing counts as "used"
+        this.#accessor = 10; // Setter is used
+        console.log(this.#accessor); // Getter is used
+    }
+}
+```
+
+## Common Patterns
+
+### Leftover from Refactoring
+
+```js
+// After refactoring, this private method is no longer called
+class UserManager {
+    #validateEmail(email) { // Used to be called, now it's not
+        return email.includes('@');
+    }
+    
+    addUser(email) {
+        // Validation was moved to separate validator class
+        // Forgot to remove #validateEmail
+    }
+}
+```
+
+### Write-Only Fields
+
+<Warning>
+Write-only private fields are considered unused since their values are never read.
+</Warning>
+
+```js
+class Logger {
+    #logLevel = 'info';
+    
+    setLogLevel(level) {
+        this.#logLevel = level; // Only writes, never reads
+    }
+    
+    // Missing method that uses #logLevel!
+}
+
+// Fix: Add a method that reads it
+class Logger {
+    #logLevel = 'info';
+    
+    setLogLevel(level) {
+        this.#logLevel = level;
+    }
+    
+    shouldLog(messageLevel) {
+        return this.#logLevel === messageLevel; // Now it's used!
+    }
+}
+```
+
+### Self-Updating Fields
+
+```js
+// This is flagged as unused
+class Counter {
+    #count = 0;
+    
+    increment() {
+        this.#count++; // Reads and writes, but result isn't used elsewhere
+    }
+}
+
+// Fix: Add getter to expose the value
+class Counter {
+    #count = 0;
+    
+    increment() {
+        this.#count++;
+    }
+    
+    getCount() {
+        return this.#count; // Now the value is actually used
+    }
+}
+```
+
+## Why Private Members?
+
+Private members are often unused because:
+
+1. **Incomplete implementation** - You planned to use it but didn't
+2. **Refactoring artifact** - Used to be needed, no longer is
+3. **Dead code** - Experimental code that never got used
+
+<Tip>
+Public unused members might be part of your API. Private unused members are definitely dead code.
+</Tip>
+
+## Refactoring Tips
+
+### Remove or Make Public
+
+```js
+// If it's truly unused:
+class Example {
+    // #unusedPrivate = 5; // Delete it
+}
+
+// If it might be used by consumers:
+class Example {
+    unusedPublic = 5; // Make it public (won't be flagged)
+}
+```
+
+### Add Missing Usage
+
+```js
+// Before: Method exists but is never called
+class DataStore {
+    #validateData(data) {
+        return data != null;
+    }
+}
+
+// After: Actually use it
+class DataStore {
+    #validateData(data) {
+        return data != null;
+    }
+    
+    save(data) {
+        if (!this.#validateData(data)) { // Now it's used!
+            throw new Error('Invalid data');
+        }
+        // save logic
+    }
+}
+```
+
+## When Not to Use It
+
+You might disable this rule if:
+
+1. You're in the middle of development and have placeholder private members
+2. You want to keep private members for documentation purposes
+
+However, it's usually better to remove truly unused code.
+
+```js
+// Temporarily disable while developing
+/* eslint-disable no-unused-private-class-members */
+class WorkInProgress {
+    #futureFeature = null; // Will be used later
+}
+/* eslint-enable no-unused-private-class-members */
+```
+
+## Comparison with no-unused-vars
+
+- `no-unused-vars` - checks variables, parameters, imports
+- `no-unused-private-class-members` - checks private class members specifically
+
+Both rules work together to catch unused code.
+
+## Related Rules
+
+- [no-unused-vars](/rules/no-unused-vars)
+- [no-unused-expressions](/rules/no-unused-expressions)

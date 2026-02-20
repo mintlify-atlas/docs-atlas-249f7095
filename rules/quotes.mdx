@@ -1,0 +1,228 @@
+---
+title: quotes
+description: Enforce consistent use of backticks, double, or single quotes
+---
+
+# quotes
+
+JavaScript allows strings to be defined with double quotes, single quotes, or backticks. This rule enforces consistency.
+
+<Note>
+**Rule Type:** Layout  
+**Fixable:** Yes (automatically fixable)  
+**Deprecated:** Consider using Prettier
+</Note>
+
+## Rule Details
+
+This rule enforces consistent use of quotes throughout your codebase.
+
+```js
+var double = "double";
+var single = 'single';
+var backtick = `backtick`;  // ES6
+```
+
+## Options
+
+### String Option
+
+- `"double"` (default) - Require double quotes
+- `"single"` - Require single quotes
+- `"backtick"` - Require backticks
+
+### Object Options
+
+- `"avoidEscape": true` - Allow other quotes to avoid escaping
+- `"allowTemplateLiterals": true` - Allow template literals
+
+## Examples
+
+### `"double"`
+
+**Incorrect:**
+
+```js
+var single = 'single';
+var unescaped = 'a string containing "double" quotes';
+var backtick = `back\ntick`;
+```
+
+**Correct:**
+
+```js
+var double = "double";
+var backtick = `back
+tick`;  // Newline requires backtick
+var backtick = tag`backtick`;  // Tagged template
+```
+
+### `"single"`
+
+**Incorrect:**
+
+```js
+var double = "double";
+var unescaped = "a string containing 'single' quotes";
+```
+
+**Correct:**
+
+```js
+var single = 'single';
+var backtick = `back${x}tick`;  // Substitution requires backtick
+```
+
+### `"backtick"`
+
+**Incorrect:**
+
+```js
+var single = 'single';
+var double = "double";
+var unescaped = 'a string containing `backticks`';
+```
+
+**Correct:**
+
+```js
+"use strict";  // Directives must use quotes
+var backtick = `backtick`;
+var obj = { 'prop-name': `value` };  // Property names can't use backticks
+```
+
+## avoidEscape Option
+
+Allow other quote styles to avoid escaping:
+
+```js
+// With "double", { "avoidEscape": true }
+var single = 'a string containing "double" quotes';  // OK
+
+// With "single", { "avoidEscape": true }
+var double = "a string containing 'single' quotes";  // OK
+
+// With "backtick", { "avoidEscape": true }
+var double = "a string containing `backtick` quotes";  // OK
+```
+
+## allowTemplateLiterals Option
+
+Allow template literals alongside your preferred quote style:
+
+```js
+// With "double", { "allowTemplateLiterals": true }
+var double = "double";
+var double = `double`;  // Also OK
+
+// With "single", { "allowTemplateLiterals": true }
+var single = 'single';
+var single = `single`;  // Also OK
+```
+
+<Note>
+This doesn't disallow ALL template literals - only simple ones. Template literals with expressions or newlines are always allowed.
+</Note>
+
+## Configuration Examples
+
+```js
+// Double quotes (default)
+{
+  "rules": {
+    "quotes": ["error", "double"]
+  }
+}
+
+// Single quotes
+{
+  "rules": {
+    "quotes": ["error", "single"]
+  }
+}
+
+// Backticks
+{
+  "rules": {
+    "quotes": ["error", "backtick"]
+  }
+}
+
+// With avoidEscape
+{
+  "rules": {
+    "quotes": ["error", "single", { 
+      "avoidEscape": true 
+    }]
+  }
+}
+
+// Allow template literals
+{
+  "rules": {
+    "quotes": ["error", "single", { 
+      "allowTemplateLiterals": true 
+    }]
+  }
+}
+```
+
+## Common Patterns
+
+### Avoiding Escaping
+
+```js
+// Without avoidEscape - must escape
+var msg = 'It\'s great';
+var msg = "Say \"hello\".";
+
+// With avoidEscape - can use other quotes
+var msg = "It's great";
+var msg = 'Say "hello".';
+```
+
+### JSX
+
+For JSX attributes, ESLint uses the `jsx-quotes` rule:
+
+```jsx
+// quotes rule applies to JS strings
+const message = 'hello';
+
+// jsx-quotes applies to JSX attributes
+<Component name="value" />
+<Component name='value' />
+```
+
+### Template Literals
+
+```js
+// Always OK - has expression
+const msg = `Hello ${name}`;
+
+// Always OK - has newline  
+const msg = `Hello
+World`;
+
+// Always OK - tagged template
+const msg = css`color: red`;
+
+// Only OK with allowTemplateLiterals
+const msg = `Hello World`;
+```
+
+## When Not to Use It
+
+<Tip>
+Most modern projects use Prettier for formatting. If you use Prettier, disable this rule.
+</Tip>
+
+Disable if:
+- You use Prettier or another formatter
+- You don't care about quote consistency
+- Your team hasn't agreed on a quote style
+
+## Related Rules
+
+- [jsx-quotes](/rules/jsx-quotes)
+- [prefer-template](/rules/prefer-template)

@@ -1,0 +1,217 @@
+---
+title: no-self-compare
+description: Disallow comparisons where both sides are exactly the same
+---
+
+# no-self-compare
+
+Comparing a variable to itself is almost always a mistake, either a typo or refactoring error.
+
+<Note>
+**Rule Type:** Problem  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+There are almost no situations where you would want to compare something to itself. The only common case is testing for `NaN`, but there are better ways to do that.
+
+```js
+let x = 10;
+if (x === x) { // This is always true - why compare?
+    x = 20;
+}
+```
+
+## Rule Details
+
+This rule flags any comparison where both sides are syntactically identical.
+
+## Examples
+
+### Incorrect Code
+
+```js
+// Variable compared to itself
+let x = 10;
+if (x === x) {
+    x = 20;
+}
+
+// Property compared to itself
+if (obj.value === obj.value) {
+    doSomething();
+}
+
+// Same expression on both sides
+if (a.b.c === a.b.c) {
+    // ...
+}
+```
+
+### Correct Code
+
+```js
+// Different variables
+if (x === y) {
+    // ...
+}
+
+// Different properties
+if (obj.value1 === obj.value2) {
+    // ...
+}
+
+// For NaN check, use isNaN or Number.isNaN
+if (Number.isNaN(x)) {
+    // ...
+}
+
+if (typeof x === 'number' && isNaN(x)) {
+    // ...
+}
+```
+
+## Common Mistakes
+
+### Testing for NaN (Wrong)
+
+<Warning>
+While `x !== x` does test for NaN (since NaN !== NaN), it's confusing and there are better alternatives.
+</Warning>
+
+```js
+// Wrong: Unclear what this tests
+if (x !== x) {
+    console.log('x is NaN');
+}
+
+// Right: Clear and explicit
+if (Number.isNaN(x)) {
+    console.log('x is NaN');
+}
+
+// Also acceptable
+if (typeof x === 'number' && isNaN(x)) {
+    console.log('x is NaN');
+}
+```
+
+### Copy-Paste Errors
+
+```js
+// Wrong: Forgot to change variable name
+function validate(minValue, maxValue) {
+    if (minValue > maxValue) { // Meant to be minValue > maxValue
+        throw new Error('Invalid range');
+    }
+}
+
+// This rule would catch:
+if (minValue > minValue) { // Typo!
+    throw new Error('Invalid range');
+}
+```
+
+### Refactoring Errors
+
+```js
+// After refactoring, comparison became self-comparison
+// Before:
+if (oldValue === newValue) { }
+
+// After refactoring (oops!):
+if (oldValue === oldValue) { } // Should still compare to newValue
+```
+
+## Known Limitations
+
+This rule uses simple syntactic comparison and may produce false positives in rare cases:
+
+```js
+// False positive: Functions may return different values
+function parseDate(dateStr) {
+  return new Date(dateStr);
+}
+
+// This is flagged, but could be intentional
+if (parseDate('December 17, 1995') === parseDate('December 17, 1995')) {
+  // Compares two different Date objects
+}
+```
+
+```js
+// False positive: Function with side effects
+let counter = 0;
+function incrementUnlessReachedMaximum() {
+  return Math.min(counter += 1, 10);
+}
+
+// This is flagged but could be intentional
+if (incrementUnlessReachedMaximum() === incrementUnlessReachedMaximum()) {
+  // Each call increments counter
+}
+```
+
+<Tip>
+For these rare cases, restructure your code to avoid self-comparison, or disable the rule for that specific line with a comment explaining why.
+</Tip>
+
+## Better Alternatives
+
+### NaN Detection
+
+```js
+// Instead of: x !== x
+if (Number.isNaN(x)) { }        // ES2015+, most precise
+if (isNaN(x)) { }               // Works for all values
+if (typeof x === 'number' && isNaN(x)) { } // Type-safe version
+```
+
+### Value Validation
+
+```js
+// If you're trying to validate a value hasn't changed:
+
+// Wrong
+if (value === value) { } // Always true
+
+// Right: Store previous value
+let previousValue = value;
+// ... later ...
+if (value === previousValue) { }
+
+// Or use a validation function
+function hasChanged(oldVal, newVal) {
+    return oldVal !== newVal;
+}
+```
+
+## When Not to Use It
+
+This rule has very few legitimate exceptions. Only disable it if:
+
+1. You have complex expressions where static analysis can't determine they're actually different
+2. You're using a code generation tool that produces self-comparisons
+
+For NaN checking, use `Number.isNaN()` instead of disabling the rule.
+
+## Disabling for Specific Lines
+
+```js
+/* eslint-disable-next-line no-self-compare */
+if (x !== x) { // NaN check in legacy code
+    // ...
+}
+
+// Better: Refactor to use Number.isNaN
+if (Number.isNaN(x)) {
+    // ...
+}
+```
+
+## Related Rules
+
+- [no-unreachable](/rules/no-unreachable)
+- [no-constant-condition](/rules/no-constant-condition)
+- [use-isnan](/rules/use-isnan)

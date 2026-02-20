@@ -1,0 +1,304 @@
+---
+title: defineConfig
+description: Type-safe helper for defining ESLint flat configs
+---
+
+The `defineConfig` helper provides type safety and IDE autocompletion when defining ESLint flat configuration files.
+
+## Import
+
+```javascript
+const { defineConfig } = require("eslint/config");
+
+// or ES modules
+import { defineConfig } from "eslint/config";
+```
+
+## Usage
+
+### Basic Usage
+
+```javascript
+const { defineConfig } = require("eslint/config");
+
+module.exports = defineConfig({
+  rules: {
+    "no-console": "error",
+    "no-var": "warn"
+  }
+});
+```
+
+### With TypeScript
+
+The primary benefit of `defineConfig` is type checking in TypeScript projects:
+
+```typescript
+import { defineConfig } from "eslint/config";
+
+export default defineConfig({
+  languageOptions: {
+    ecmaVersion: 2022,
+    sourceType: "module"
+  },
+  rules: {
+    "no-unused-vars": "error"
+  }
+});
+```
+
+### Array of Configs
+
+```javascript
+const { defineConfig } = require("eslint/config");
+
+module.exports = defineConfig([
+  {
+    files: ["**/*.js"],
+    rules: {
+      "no-console": "error"
+    }
+  },
+  {
+    files: ["**/*.test.js"],
+    rules: {
+      "no-console": "off"
+    }
+  }
+]);
+```
+
+## Function Signature
+
+```javascript
+function defineConfig(config)
+```
+
+<ParamField path="config" type="Config | Config[]" required>
+  A single configuration object or an array of configuration objects.
+
+  <Expandable title="Config properties">
+    <ParamField path="files" type="string[]">
+      Glob patterns for files this config applies to.
+    </ParamField>
+
+    <ParamField path="ignores" type="string[]">
+      Glob patterns for files to ignore.
+    </ParamField>
+
+    <ParamField path="languageOptions" type="object">
+      Language-specific options.
+      
+      <Expandable title="properties">
+        <ParamField path="ecmaVersion" type="number | 'latest'">
+          ECMAScript version to support.
+        </ParamField>
+
+        <ParamField path="sourceType" type="'script' | 'module' | 'commonjs'">
+          The type of JavaScript source code.
+        </ParamField>
+
+        <ParamField path="globals" type="object">
+          Global variables.
+        </ParamField>
+
+        <ParamField path="parser" type="object">
+          Custom parser.
+        </ParamField>
+
+        <ParamField path="parserOptions" type="object">
+          Options for the parser.
+        </ParamField>
+      </Expandable>
+    </ParamField>
+
+    <ParamField path="linterOptions" type="object">
+      Linting options.
+      
+      <Expandable title="properties">
+        <ParamField path="noInlineConfig" type="boolean">
+          Disable inline configuration comments.
+        </ParamField>
+
+        <ParamField path="reportUnusedDisableDirectives" type="boolean | 'off' | 'warn' | 'error'">
+          Report unused eslint-disable directives.
+        </ParamField>
+      </Expandable>
+    </ParamField>
+
+    <ParamField path="processor" type="object | string">
+      Processor for the files.
+    </ParamField>
+
+    <ParamField path="plugins" type="object">
+      Plugins to use.
+    </ParamField>
+
+    <ParamField path="rules" type="object">
+      Rule configurations.
+    </ParamField>
+
+    <ParamField path="settings" type="object">
+      Shared settings for rules.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="config" type="Config | Config[]">
+  Returns the same config(s) passed in, with full type information.
+</ResponseField>
+
+## Examples
+
+<Tabs>
+  <Tab title="Simple Config">
+    ```javascript
+    const { defineConfig } = require("eslint/config");
+
+    module.exports = defineConfig({
+      languageOptions: {
+        ecmaVersion: 2024,
+        sourceType: "module",
+        globals: {
+          window: "readonly",
+          document: "readonly"
+        }
+      },
+      rules: {
+        "no-console": "warn",
+        "no-unused-vars": "error",
+        "prefer-const": "error"
+      }
+    });
+    ```
+  </Tab>
+  <Tab title="Multiple Configs">
+    ```javascript
+    const { defineConfig } = require("eslint/config");
+    const eslintPluginReact = require("eslint-plugin-react");
+
+    module.exports = defineConfig([
+      {
+        // Base config for all files
+        languageOptions: {
+          ecmaVersion: 2024,
+          sourceType: "module"
+        },
+        rules: {
+          "no-console": "error"
+        }
+      },
+      {
+        // Config specific to React files
+        files: ["src/**/*.jsx"],
+        plugins: {
+          react: eslintPluginReact
+        },
+        rules: {
+          "react/prop-types": "error",
+          "react/react-in-jsx-scope": "off"
+        }
+      },
+      {
+        // Config for test files
+        files: ["**/*.test.js", "**/*.spec.js"],
+        rules: {
+          "no-console": "off"
+        }
+      }
+    ]);
+    ```
+  </Tab>
+  <Tab title="With Plugins">
+    ```javascript
+    const { defineConfig } = require("eslint/config");
+    const tsPlugin = require("@typescript-eslint/eslint-plugin");
+    const tsParser = require("@typescript-eslint/parser");
+
+    module.exports = defineConfig([
+      {
+        files: ["**/*.ts", "**/*.tsx"],
+        languageOptions: {
+          parser: tsParser,
+          parserOptions: {
+            project: "./tsconfig.json"
+          }
+        },
+        plugins: {
+          "@typescript-eslint": tsPlugin
+        },
+        rules: {
+          "@typescript-eslint/no-explicit-any": "error",
+          "@typescript-eslint/no-unused-vars": "error"
+        }
+      }
+    ]);
+    ```
+  </Tab>
+  <Tab title="TypeScript">
+    ```typescript
+    import { defineConfig } from "eslint/config";
+    import tseslint from "typescript-eslint";
+
+    export default defineConfig([
+      {
+        files: ["**/*.ts"],
+        languageOptions: {
+          parser: tseslint.parser,
+          parserOptions: {
+            project: true
+          }
+        },
+        plugins: {
+          "@typescript-eslint": tseslint.plugin
+        },
+        rules: {
+          "@typescript-eslint/no-explicit-any": "error",
+          "@typescript-eslint/explicit-function-return-type": "warn"
+        }
+      }
+    ]);
+    ```
+  </Tab>
+</Tabs>
+
+## Benefits
+
+### Type Safety
+
+When using TypeScript or JSDoc, `defineConfig` provides full type checking:
+
+```javascript
+// This will show a type error
+module.exports = defineConfig({
+  rules: {
+    "invalid-rule-name": "error" // IDE will warn about unknown rule
+  }
+});
+```
+
+### IDE Autocompletion
+
+`defineConfig` enables autocompletion in editors that support TypeScript:
+
+- Property name suggestions
+- Valid values for options
+- Inline documentation
+
+### Runtime Validation
+
+While the primary purpose is type safety, `defineConfig` also provides runtime validation in development:
+
+```javascript
+const { defineConfig } = require("eslint/config");
+
+// Runtime error if config structure is invalid
+module.exports = defineConfig({
+  rules: null // Error: rules must be an object
+});
+```
+
+## Related
+
+- [globalIgnores()](/api/config/global-ignores) - Helper for global ignore patterns
+- [ESLint Configuration](https://eslint.org/docs/latest/use/configure/configuration-files) - Full configuration documentation

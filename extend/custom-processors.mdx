@@ -1,0 +1,789 @@
+---
+title: Custom Processors
+description: Create processors to lint JavaScript code embedded in non-JavaScript files like Markdown, HTML, or Vue components
+---
+
+# Custom Processors
+
+Processors enable ESLint to extract and lint JavaScript from non-JavaScript files. They're perfect for Markdown code blocks, HTML script tags, or framework-specific file formats.
+
+## When to Use Processors
+
+Create a processor when you need to:
+
+- Lint JavaScript in Markdown code blocks
+- Extract scripts from HTML files
+- Process framework-specific files (Vue, Svelte)
+- Handle template languages
+- Transform files before linting
+
+<Info>
+**Popular Processors:**
+- `@eslint/markdown` - Lint JavaScript in Markdown
+- `eslint-plugin-vue` - Vue single-file components
+- `eslint-plugin-html` - HTML script tags
+</Info>
+
+## Processor Structure
+
+A processor is an object with `preprocess()` and `postprocess()` methods:
+
+```javascript
+const plugin = {
+  meta: {
+    name: "eslint-plugin-example",
+    version: "1.2.3"
+  },
+  processors: {
+    "processor-name": {
+      meta: {
+        name: "eslint-processor-name",
+        version: "1.2.3"
+      },
+      
+      // Extract JavaScript code
+      preprocess(text, filename) {
+        return [
+          { text: code1, filename: "0.js" },
+          { text: code2, filename: "1.js" }
+        ];
+      },
+      
+      // Adjust and aggregate messages
+      postprocess(messages, filename) {
+        return [].concat(...messages);
+      },
+      
+      supportsAutofix: true
+    }
+  }
+};
+
+export default plugin;
+```
+
+## Processor Methods
+
+<ParamField path="preprocess(text, filename)" type="function" required>
+  Extracts JavaScript code blocks from the file
+  
+  **Parameters:**
+  - `text` (string): File contents
+  - `filename` (string): File path
+  
+  **Returns:** Array of code blocks, each with:
+  - `text` (string): JavaScript code to lint
+  - `filename` (string): Virtual filename (should include extension)
+  
+  ```javascript
+  preprocess(text, filename) {
+    const blocks = extractCodeBlocks(text);
+    return blocks.map((code, index) => ({
+      text: code,
+      filename: `${index}.js`
+    }));
+  }
+  ```
+</ParamField>
+
+<ParamField path="postprocess(messages, filename)" type="function" required>
+  Adjusts lint message locations and aggregates results
+  
+  **Parameters:**
+  - `messages` (Message[][]): Two-dimensional array of messages
+  - `filename` (string): File path
+  
+  **Returns:** Flat array of adjusted messages
+  
+  ```javascript
+  postprocess(messages, filename) {
+    // messages[0] = messages for first code block
+    // messages[1] = messages for second code block
+    
+    return messages
+      .flat()
+      .map(adjustMessageLocation);
+  }
+  ```
+</ParamField>
+
+<ParamField path="supportsAutofix" type="boolean">
+  Set to `true` to enable automatic fixes
+  
+  <Warning>
+  When `supportsAutofix` is true, `postprocess()` must also transform the `fix` property of messages to reference the original file locations.
+  </Warning>
+</ParamField>
+
+## Message Structure
+
+Lint messages have this structure:
+
+```typescript
+type LintMessage = {
+  line?: number;          // 1-based line number
+  column?: number;        // 1-based column number
+  endLine?: number;       // 1-based end line
+  endColumn?: number;     // 1-based end column
+  
+  ruleId: string | null;  // Rule ID
+  message: string;        // Error message
+  severity: 0 | 1 | 2;   // off, warn, error
+  
+  fix?: {
+    range: [number, number];
+    text: string;
+  };
+  
+  suggestions?: Array<{
+    desc?: string;
+    messageId?: string;
+    fix: {
+      range: [number, number];
+      text: string;
+    };
+  }>;
+};
+```
+
+## Example: Markdown Processor
+
+Extract JavaScript from Markdown code blocks:
+
+```javascript
+const plugin = {
+  meta: {
+    name: "eslint-plugin-markdown",
+    version: "1.0.0"
+  },
+  
+  processors: {
+    markdown: {
+      meta: {
+        name: "markdown-processor",
+        version: "1.0.0"
+      },
+      
+      preprocess(text, filename) {
+        const codeBlocks = [];
+        const regex = /```(?:javascript|js)\n([\s\S]*?)```/g;
+        
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          const code = match[1];
+          const offset = match.index + match[0].indexOf(code);
+          
+          codeBlocks.push({
+            text: code,
+            filename: `${codeBlocks.length}.js`,
+            offset // Store for postprocess
+          });
+        }
+        
+        // Store offsets for postprocessing
+        this.offsets = codeBlocks.map(block => block.offset);
+        
+        return codeBlocks;
+      },
+      
+      postprocess(messages, filename) {
+        // Flatten messages from all code blocks
+        return messages.flatMap((blockMessages, index) => {
+          const offset = this.offsets[index];
+          const offsetLines = text.slice(0, offset)
+            .split('\n').length - 1;
+          
+          return blockMessages.map(message => ({
+            ...message,
+            // Adjust line numbers to original file
+            line: message.line + offsetLines,
+            endLine: message.endLine
+              ? message.endLine + offsetLines
+              : undefined
+          }));
+        });
+      },
+      
+      supportsAutofix: false
+    }
+  }
+};
+
+export default plugin;
+```
+
+## Example: HTML Processor
+
+Extract JavaScript from HTML script tags:
+
+```javascript
+const plugin = {
+  processors: {
+    ".html": {
+      preprocess(text, filename) {
+        const scripts = [];
+        const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+        
+        let match;
+        while ((match = scriptRegex.exec(text)) !== null) {
+          const code = match[1];
+          const offset = match.index + match[0].indexOf(code);
+          
+          // Calculate line offset
+          const lineOffset = text.slice(0, offset)
+            .split('\n').length - 1;
+          
+          scripts.push({
+            text: code,
+            filename: `${scripts.length}.js`,
+            lineOffset
+          });
+        }
+        
+        this.lineOffsets = scripts.map(s => s.lineOffset);
+        return scripts;
+      },
+      
+      postprocess(messages, filename) {
+        return messages.flatMap((scriptMessages, index) => {
+          const lineOffset = this.lineOffsets[index];
+          
+          return scriptMessages.map(msg => ({
+            ...msg,
+            line: (msg.line || 0) + lineOffset,
+            endLine: msg.endLine
+              ? msg.endLine + lineOffset
+              : undefined,
+            column: msg.column,
+            endColumn: msg.endColumn
+          }));
+        });
+      }
+    }
+  }
+};
+```
+
+## Supporting Autofixes
+
+To support automatic fixes, transform fix ranges to original file positions:
+
+```javascript
+processors: {
+  "processor-name": {
+    preprocess(text, filename) {
+      const blocks = extractBlocks(text);
+      
+      // Store mapping info
+      this.blocks = blocks.map(block => ({
+        originalOffset: block.offset,
+        text: block.text
+      }));
+      
+      return blocks.map((block, i) => ({
+        text: block.text,
+        filename: `${i}.js`
+      }));
+    },
+    
+    postprocess(messages, filename) {
+      return messages.flatMap((blockMessages, blockIndex) => {
+        const block = this.blocks[blockIndex];
+        const originalOffset = block.originalOffset;
+        
+        return blockMessages.map(message => {
+          const adjustedMessage = {
+            ...message,
+            line: calculateOriginalLine(message.line, originalOffset),
+            column: message.column
+          };
+          
+          // Adjust fix ranges
+          if (message.fix) {
+            adjustedMessage.fix = {
+              range: [
+                message.fix.range[0] + originalOffset,
+                message.fix.range[1] + originalOffset
+              ],
+              text: message.fix.text
+            };
+          }
+          
+          // Adjust suggestion fix ranges
+          if (message.suggestions) {
+            adjustedMessage.suggestions = message.suggestions.map(sugg => ({
+              ...sugg,
+              fix: {
+                range: [
+                  sugg.fix.range[0] + originalOffset,
+                  sugg.fix.range[1] + originalOffset
+                ],
+                text: sugg.fix.text
+              }
+            }));
+          }
+          
+          return adjustedMessage;
+        });
+      });
+    },
+    
+    supportsAutofix: true
+  }
+}
+```
+
+## Metadata Objects
+
+### Plugin Meta
+
+Define at plugin level:
+
+```javascript
+const plugin = {
+  meta: {
+    name: "eslint-plugin-example",
+    version: "1.2.3",
+    namespace: "example"
+  },
+  processors: { /* ... */ }
+};
+```
+
+### Processor Meta
+
+Define for each processor:
+
+```javascript
+processors: {
+  "processor-name": {
+    meta: {
+      name: "eslint-processor-name",
+      version: "1.2.3"
+    },
+    preprocess() { /* ... */ },
+    postprocess() { /* ... */ }
+  }
+}
+```
+
+<Info>
+**Why Both Meta Objects?**
+
+The plugin meta is used when the processor is referenced by string (e.g., `"example/processor-name"`). The processor meta is used when the processor object is passed directly in configuration.
+</Info>
+
+## Creating Your Processor
+
+<Steps>
+  <Step title="Identify Code Blocks">
+    Determine how to extract JavaScript from your file format:
+    
+    ```javascript
+    function extractCodeBlocks(text) {
+      // For Markdown
+      const blocks = [];
+      const regex = /```js\n([\s\S]*?)```/g;
+      
+      let match;
+      while ((match = regex.exec(text))) {
+        blocks.push({
+          code: match[1],
+          offset: match.index,
+          line: text.slice(0, match.index)
+            .split('\n').length
+        });
+      }
+      
+      return blocks;
+    }
+    ```
+  </Step>
+  
+  <Step title="Implement Preprocess">
+    Extract and return code blocks:
+    
+    ```javascript
+    preprocess(text, filename) {
+      const blocks = extractCodeBlocks(text);
+      
+      // Store metadata for postprocess
+      this.blockMetadata = blocks.map(b => ({
+        offset: b.offset,
+        line: b.line
+      }));
+      
+      return blocks.map((block, i) => ({
+        text: block.code,
+        filename: `${i}.js`
+      }));
+    }
+    ```
+  </Step>
+  
+  <Step title="Implement Postprocess">
+    Adjust message locations:
+    
+    ```javascript
+    postprocess(messages, filename) {
+      return messages.flatMap((blockMsgs, i) => {
+        const metadata = this.blockMetadata[i];
+        
+        return blockMsgs.map(msg => ({
+          ...msg,
+          line: msg.line + metadata.line - 1,
+          endLine: msg.endLine
+            ? msg.endLine + metadata.line - 1
+            : undefined
+        }));
+      });
+    }
+    ```
+  </Step>
+  
+  <Step title="Test Thoroughly">
+    Test with various code block configurations:
+    
+    ```javascript
+    const processor = plugin.processors.markdown;
+    
+    const input = `
+    # Title
+    
+    \`\`\`javascript
+    const x = 1;
+    \`\`\`
+    
+    Text
+    
+    \`\`\`js
+    const y = 2;
+    \`\`\`
+    `;
+    
+    const blocks = processor.preprocess(input, "test.md");
+    console.log(blocks);
+    // [
+    //   { text: "const x = 1;\n", filename: "0.js" },
+    //   { text: "const y = 2;\n", filename: "1.js" }
+    // ]
+    ```
+  </Step>
+</Steps>
+
+## Using Processors in Configuration
+
+Configure ESLint to use your processor:
+
+```javascript eslint.config.js
+import example from "eslint-plugin-example";
+
+export default [
+  {
+    files: ["**/*.md"],
+    plugins: {
+      example
+    },
+    processor: "example/markdown"
+  },
+  {
+    // Rules for extracted JavaScript
+    files: ["**/*.md/*.js"],
+    rules: {
+      "no-console": "off",
+      "no-unused-vars": "warn"
+    }
+  }
+];
+```
+
+<Tip>
+**Virtual Filenames**
+
+ESLint uses the `filename` from preprocessed blocks to match configuration. Use patterns like `**/*.md/*.js` to target extracted code.
+</Tip>
+
+## Advanced Patterns
+
+### Multiple File Types
+
+Handle different file types with one plugin:
+
+```javascript
+const plugin = {
+  processors: {
+    ".md": markdownProcessor,
+    ".html": htmlProcessor,
+    ".vue": vueProcessor
+  }
+};
+```
+
+### Conditional Processing
+
+Process only certain code blocks:
+
+```javascript
+preprocess(text, filename) {
+  const blocks = [];
+  const regex = /```(\w+)\n([\s\S]*?)```/g;
+  
+  let match;
+  while ((match = regex.exec(text))) {
+    const lang = match[1];
+    const code = match[2];
+    
+    // Only process JavaScript and TypeScript
+    if (lang === 'javascript' || lang === 'js' || lang === 'typescript' || lang === 'ts') {
+      blocks.push({
+        text: code,
+        filename: `${blocks.length}.${lang === 'typescript' || lang === 'ts' ? 'ts' : 'js'}`
+      });
+    }
+  }
+  
+  return blocks;
+}
+```
+
+### Preserving Indentation
+
+Maintain original indentation in extracted code:
+
+```javascript
+preprocess(text, filename) {
+  const blocks = extractBlocks(text);
+  
+  return blocks.map((block, i) => {
+    // Calculate base indentation
+    const lines = block.text.split('\n');
+    const firstLine = lines.find(line => line.trim());
+    const baseIndent = firstLine ? firstLine.match(/^\s*/)[0].length : 0;
+    
+    // Remove base indentation
+    const dedented = lines
+      .map(line => line.slice(baseIndent))
+      .join('\n');
+    
+    return {
+      text: dedented,
+      filename: `${i}.js`
+    };
+  });
+}
+```
+
+## Testing Processors
+
+### Unit Tests
+
+```javascript
+const assert = require("assert");
+const plugin = require("./index");
+
+const processor = plugin.processors.markdown;
+
+describe("Markdown Processor", () => {
+  describe("preprocess", () => {
+    it("should extract code blocks", () => {
+      const input = `
+        # Title
+        \`\`\`javascript
+        const x = 1;
+        \`\`\`
+      `;
+      
+      const blocks = processor.preprocess(input, "test.md");
+      
+      assert.strictEqual(blocks.length, 1);
+      assert.strictEqual(blocks[0].text.trim(), "const x = 1;");
+    });
+    
+    it("should handle multiple blocks", () => {
+      const input = `
+        \`\`\`js
+        const a = 1;
+        \`\`\`
+        
+        \`\`\`js
+        const b = 2;
+        \`\`\`
+      `;
+      
+      const blocks = processor.preprocess(input, "test.md");
+      assert.strictEqual(blocks.length, 2);
+    });
+  });
+  
+  describe("postprocess", () => {
+    it("should adjust line numbers", () => {
+      const messages = [
+        [{
+          line: 1,
+          column: 7,
+          message: "Error",
+          ruleId: "no-unused-vars",
+          severity: 2
+        }]
+      ];
+      
+      // Simulate processor state
+      processor.offsets = [50]; // Code block starts at char 50
+      
+      const result = processor.postprocess(messages, "test.md");
+      
+      assert(result[0].line > 1); // Line adjusted
+    });
+  });
+});
+```
+
+### Integration Tests
+
+```javascript
+const { ESLint } = require("eslint");
+const plugin = require("./index");
+
+const eslint = new ESLint({
+  overrideConfigFile: true,
+  overrideConfig: [
+    {
+      files: ["**/*.md"],
+      plugins: { example: plugin },
+      processor: "example/markdown"
+    },
+    {
+      files: ["**/*.md/*.js"],
+      rules: {
+        "no-unused-vars": "error"
+      }
+    }
+  ]
+});
+
+const results = await eslint.lintText(
+  `
+  # Test
+  
+  \`\`\`javascript
+  const unused = 1;
+  \`\`\`
+  `,
+  { filePath: "test.md" }
+);
+
+console.log(results[0].messages);
+```
+
+## Performance Tips
+
+<Warning>
+Processors run on every file. Optimize performance:
+
+- **Cache regex patterns** - Compile once, use many times
+- **Minimize string operations** - Avoid unnecessary slicing/splitting
+- **Use efficient parsing** - Consider parser libraries for complex formats
+- **Limit regex backtracking** - Use possessive quantifiers
+</Warning>
+
+### Optimized Extraction
+
+```javascript
+// Good: Compile regex once
+const CODE_BLOCK_REGEX = /```(?:javascript|js)\n([\s\S]*?)```/g;
+
+preprocess(text, filename) {
+  const blocks = [];
+  let match;
+  
+  // Reuse compiled regex
+  CODE_BLOCK_REGEX.lastIndex = 0;
+  while ((match = CODE_BLOCK_REGEX.exec(text))) {
+    blocks.push({
+      text: match[1],
+      filename: `${blocks.length}.js`
+    });
+  }
+  
+  return blocks;
+}
+```
+
+## Common Pitfalls
+
+<AccordionGroup>
+  <Accordion title="Incorrect Line Number Adjustments">
+    Always calculate line offsets based on the original file:
+    
+    ```javascript
+    // Calculate line offset
+    const lineOffset = text.slice(0, blockOffset)
+      .split('\n').length - 1;
+    
+    // Adjust message
+    message.line += lineOffset;
+    ```
+  </Accordion>
+  
+  <Accordion title="Forgetting to Flatten Messages">
+    `postprocess()` receives a 2D array but must return a 1D array:
+    
+    ```javascript
+    // Wrong
+    return messages;
+    
+    // Right
+    return messages.flat();
+    // or
+    return [].concat(...messages);
+    ```
+  </Accordion>
+  
+  <Accordion title="Not Setting supportsAutofix">
+    If you want fixes to work, set `supportsAutofix: true` and adjust fix ranges in `postprocess()`.
+  </Accordion>
+  
+  <Accordion title="Losing Message Properties">
+    Preserve all message properties when adjusting:
+    
+    ```javascript
+    return blockMessages.map(msg => ({
+      ...msg, // Preserve all properties
+      line: adjustedLine,
+      endLine: adjustedEndLine
+    }));
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Real-World Examples
+
+<CardGroup cols={2}>
+  <Card title="@eslint/markdown" icon="github" href="https://github.com/eslint/markdown">
+    Official Markdown processor
+  </Card>
+  
+  <Card title="eslint-plugin-vue" icon="github" href="https://github.com/vuejs/eslint-plugin-vue">
+    Vue single-file component processor
+  </Card>
+  
+  <Card title="eslint-plugin-html" icon="github" href="https://github.com/BenoitZugmeyer/eslint-plugin-html">
+    HTML script tag processor
+  </Card>
+  
+  <Card title="eslint-plugin-svelte" icon="github" href="https://github.com/sveltejs/eslint-plugin-svelte">
+    Svelte component processor
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create a Plugin" icon="plug" href="./plugins">
+    Package your processor for distribution
+  </Card>
+  
+  <Card title="Configure Processors" icon="gear" href="../use/configure/plugins#specify-a-processor">
+    Learn how users configure processors
+  </Card>
+</CardGroup>

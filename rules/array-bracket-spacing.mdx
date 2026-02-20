@@ -1,0 +1,154 @@
+---
+title: array-bracket-spacing
+description: Enforce consistent spacing inside array brackets
+---
+
+# array-bracket-spacing
+
+This rule enforces consistent spacing inside array brackets.
+
+<Note>
+**Rule Type:** Layout  
+**Fixable:** Yes (automatically fixable)  
+**Deprecated:** Consider using Prettier
+</Note>
+
+## Rule Details
+
+Some style guides require or disallow spaces inside array brackets:
+
+```js
+var arr = [ 'foo', 'bar' ];  // spaces
+var arr = ['foo', 'bar'];    // no spaces
+```
+
+## Options
+
+### `"never"` (default)
+
+Disallow spaces inside array brackets.
+
+**Incorrect:**
+
+```js
+var arr = [ 'foo', 'bar' ];
+var arr = ['foo', 'bar' ];
+var arr = [ ['foo'], 'bar'];
+var [ x, y ] = z;
+```
+
+**Correct:**
+
+```js
+var arr = [];
+var arr = ['foo', 'bar', 'baz'];
+var arr = [['foo'], 'bar', 'baz'];
+var arr = [
+  'foo',
+  'bar'
+];
+var [x, y] = z;
+```
+
+### `"always"`
+
+Require spaces inside array brackets.
+
+**Incorrect:**
+
+```js
+var arr = ['foo', 'bar'];
+var arr = ['foo', 'bar' ];
+var [x, y] = z;
+```
+
+**Correct:**
+
+```js
+var arr = [];
+var arr = [ 'foo', 'bar', 'baz' ];
+var arr = [ [ 'foo' ], 'bar', 'baz' ];
+var arr = [
+  'foo',
+  'bar'
+];
+var [ x, y ] = z;
+```
+
+## Exception Options
+
+### `singleValue`
+
+Control spacing for single-element arrays.
+
+```js
+// "always", { "singleValue": false }
+var foo = ['foo'];  // OK - no spaces for single value
+var foo = [ 'foo', 'bar' ];  // Spaces for multiple
+```
+
+### `objectsInArrays`
+
+Control spacing around objects in arrays.
+
+```js
+// "always", { "objectsInArrays": false }
+var arr = [{ 'foo': 'bar' }];  // No space before }
+var arr = [ 'foo', { 'bar': 'baz' }, 'qux' ];  // Space elsewhere
+```
+
+### `arraysInArrays`
+
+Control spacing around nested arrays.
+
+```js
+// "always", { "arraysInArrays": false }
+var arr = [[ 1, 2 ], 2, 3, 4 ];  // No space before ]]
+var arr = [ 1, [ 2, 3 ]];  // No space after [ before [
+```
+
+## Configuration Examples
+
+```js
+// No spaces (default)
+{
+  "rules": {
+    "array-bracket-spacing": ["error", "never"]
+  }
+}
+
+// Always spaces
+{
+  "rules": {
+    "array-bracket-spacing": ["error", "always"]
+  }
+}
+
+// With exceptions
+{
+  "rules": {
+    "array-bracket-spacing": ["error", "always", {
+      "singleValue": false,
+      "objectsInArrays": false,
+      "arraysInArrays": false
+    }]
+  }
+}
+```
+
+## When Not to Use It
+
+<Tip>
+Most teams now use Prettier for formatting. If you use Prettier, disable this rule.
+</Tip>
+
+Disable if:
+- You use Prettier or another formatter
+- You don't care about spacing consistency
+- Your team hasn't agreed on a style
+
+## Related Rules
+
+- [object-curly-spacing](/rules/object-curly-spacing)
+- [space-in-parens](/rules/space-in-parens)
+- [computed-property-spacing](/rules/computed-property-spacing)

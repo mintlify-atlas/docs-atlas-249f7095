@@ -1,0 +1,829 @@
+---
+title: Custom Parsers
+description: Create custom parsers to extend ESLint support for new JavaScript syntax and non-standard languages
+---
+
+# Custom Parsers
+
+Custom parsers enable ESLint to understand non-standard JavaScript syntax, experimental features, or entirely different languages. A parser transforms source code into an Abstract Syntax Tree (AST) that ESLint can analyze.
+
+## When to Create a Parser
+
+Create a custom parser when you need to:
+
+- Support TypeScript, Flow, or other type systems
+- Enable experimental JavaScript features
+- Lint domain-specific languages (DSLs)
+- Handle custom syntax extensions
+- Process template languages
+
+<Info>
+**Popular Custom Parsers:**
+- `@typescript-eslint/parser` - TypeScript support
+- `@babel/eslint-parser` - Babel syntax support
+- `vue-eslint-parser` - Vue.js single-file components
+</Info>
+
+## Parser Interface
+
+A parser must export either a `parse()` or `parseForESLint()` method:
+
+<CodeGroup>
+```javascript parse() Method
+const espree = require("espree");
+
+module.exports = {
+  parse(code, options) {
+    // Return only the AST
+    return espree.parse(code, options);
+  }
+};
+```
+
+```javascript parseForESLint() Method (Recommended)
+const espree = require("espree");
+
+module.exports = {
+  parseForESLint(code, options) {
+    // Return AST plus additional data
+    const ast = espree.parse(code, {
+      ...options,
+      tokens: true,
+      comment: true
+    });
+    
+    return {
+      ast,
+      services: {},
+      scopeManager: null,
+      visitorKeys: null
+    };
+  }
+};
+```
+</CodeGroup>
+
+## Parser Methods
+
+<ParamField path="parse(code, options)" type="function">
+  Simple parsing method that returns only the AST
+  
+  **Parameters:**
+  - `code` (string): Source code to parse
+  - `options` (object): Parser options from configuration
+  
+  **Returns:** AST object
+</ParamField>
+
+<ParamField path="parseForESLint(code, options)" type="function">
+  Advanced parsing method that returns AST and additional data
+  
+  **Parameters:**
+  - `code` (string): Source code to parse
+  - `options` (object): Parser options from configuration
+  
+  **Returns:** Object with:
+  - `ast` (required): The AST object
+  - `services` (optional): Parser-dependent services
+  - `scopeManager` (optional): Custom scope manager
+  - `visitorKeys` (optional): Custom visitor keys
+</ParamField>
+
+## Return Object Structure
+
+When using `parseForESLint()`, return an object with these properties:
+
+### ast (required)
+
+The Abstract Syntax Tree based on [ESTree](https://github.com/estree/estree) specification:
+
+```javascript
+{
+  ast: {
+    type: "Program",
+    body: [...],
+    tokens: [...],
+    comments: [...],
+    loc: {...},
+    range: [0, 123]
+  }
+}
+```
+
+### services (optional)
+
+Provide custom services to rules. For example, TypeScript parser provides type checking:
+
+```javascript
+{
+  services: {
+    // TypeScript-specific service
+    program: tsProgram,
+    esTreeNodeToTSNodeMap: new WeakMap(),
+    tsNodeToESTreeNodeMap: new WeakMap(),
+    
+    // Custom helper
+    getTypeAtLocation(node) {
+      // Return type information
+    }
+  }
+}
+```
+
+Rules can access these services:
+
+```javascript
+create(context) {
+  const services = context.sourceCode.parserServices;
+  
+  if (services.getTypeAtLocation) {
+    const type = services.getTypeAtLocation(node);
+  }
+}
+```
+
+### scopeManager (optional)
+
+Custom [ScopeManager](./scope-manager-interface) for non-standard scoping:
+
+```javascript
+{
+  scopeManager: customScopeManager
+}
+```
+
+<Warning>
+**Requirements for scopeManager (ESLint v10.0.0+):**
+
+- Must automatically resolve global variable references
+- Must provide `addGlobals(names: string[])` method
+- Use `eslintScopeManager: true` in `parserOptions` for feature detection
+</Warning>
+
+### visitorKeys (optional)
+
+Define custom AST traversal for non-standard nodes:
+
+```javascript
+{
+  visitorKeys: {
+    // Standard node
+    FunctionDeclaration: ["id", "params", "body"],
+    
+    // Custom node type
+    CustomNode: ["left", "right", "customProp"]
+  }
+}
+```
+
+## AST Specification
+
+Your parser must generate an AST compatible with ESLint requirements:
+
+### All Nodes
+
+Every AST node must have:
+
+<ParamField path="type" type="string" required>
+  Node type (e.g., "Identifier", "FunctionDeclaration")
+</ParamField>
+
+<ParamField path="range" type="[number, number]" required>
+  Character indices [start, end] in source code
+  
+  ```javascript
+  {
+    range: [0, 10] // Characters 0-10
+  }
+  ```
+</ParamField>
+
+<ParamField path="loc" type="SourceLocation" required>
+  Line and column location information
+  
+  ```javascript
+  {
+    loc: {
+      start: { line: 1, column: 0 },
+      end: { line: 1, column: 10 }
+    }
+  }
+  ```
+</ParamField>
+
+<Note>
+The `parent` property will be set by ESLint during traversal. Ensure it's writable.
+</Note>
+
+### Program Node
+
+The root node must include:
+
+<ParamField path="tokens" type="Token[]" required>
+  Array of tokens affecting program behavior
+  
+  ```javascript
+  {
+    tokens: [
+      {
+        type: "Keyword",
+        value: "const",
+        range: [0, 5],
+        loc: { start: {...}, end: {...} }
+      }
+    ]
+  }
+  ```
+</ParamField>
+
+<ParamField path="comments" type="Token[]" required>
+  Array of comment tokens
+  
+  ```javascript
+  {
+    comments: [
+      {
+        type: "Line",
+        value: " Comment text",
+        range: [10, 24],
+        loc: { start: {...}, end: {...} }
+      }
+    ]
+  }
+  ```
+</ParamField>
+
+<Warning>
+Tokens and comments must:
+- Be sorted by `range[0]`
+- Not have overlapping ranges
+</Warning>
+
+### Literal Nodes
+
+Literal nodes must include:
+
+<ParamField path="raw" type="string" required>
+  The original source code text
+  
+  ```javascript
+  {
+    type: "Literal",
+    value: 42,
+    raw: "42",
+    range: [10, 12]
+  }
+  ```
+</ParamField>
+
+## Parser Metadata
+
+Include metadata for better debugging and caching:
+
+```javascript
+module.exports = {
+  meta: {
+    name: "eslint-parser-custom",
+    version: "1.2.3"
+  },
+  
+  parseForESLint(code, options) {
+    // ...
+  }
+};
+```
+
+<ParamField path="meta.name" type="string">
+  Should match your npm package name
+</ParamField>
+
+<ParamField path="meta.version" type="string">
+  Should match your npm package version
+</ParamField>
+
+<Tip>
+Read metadata from `package.json`:
+
+```javascript
+const pkg = require("./package.json");
+
+module.exports = {
+  meta: {
+    name: pkg.name,
+    version: pkg.version
+  }
+};
+```
+</Tip>
+
+## Example: Simple Custom Parser
+
+Here's a basic parser that adds logging:
+
+```javascript
+const espree = require("espree");
+
+module.exports = {
+  meta: {
+    name: "eslint-parser-logging",
+    version: "1.0.0"
+  },
+  
+  parseForESLint(code, options) {
+    console.log(`Parsing ${options.filePath}`);
+    console.time(`Parse ${options.filePath}`);
+    
+    const ast = espree.parse(code, {
+      ecmaVersion: "latest",
+      sourceType: options.sourceType || "module",
+      ecmaFeatures: options.ecmaFeatures || {},
+      tokens: true,
+      comment: true
+    });
+    
+    console.timeEnd(`Parse ${options.filePath}`);
+    
+    return {
+      ast,
+      services: {},
+      scopeManager: null,
+      visitorKeys: null
+    };
+  }
+};
+```
+
+## Example: Parser with Services
+
+Provide custom services to rules:
+
+```javascript
+const espree = require("espree");
+
+module.exports = {
+  meta: {
+    name: "eslint-parser-with-services",
+    version: "1.0.0"
+  },
+  
+  parseForESLT(code, options) {
+    const ast = espree.parse(code, {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      tokens: true,
+      comment: true
+    });
+    
+    // Custom service for rules
+    const services = {
+      isReactComponent(node) {
+        // Check if node is a React component
+        return node.type === "ClassDeclaration" &&
+               node.superClass &&
+               node.superClass.name === "Component";
+      },
+      
+      getImportSource(node) {
+        // Get import source
+        if (node.type === "ImportDeclaration") {
+          return node.source.value;
+        }
+        return null;
+      }
+    };
+    
+    return {
+      ast,
+      services,
+      scopeManager: null,
+      visitorKeys: null
+    };
+  }
+};
+```
+
+Use in a rule:
+
+```javascript
+module.exports = {
+  create(context) {
+    const services = context.sourceCode.parserServices;
+    
+    return {
+      ClassDeclaration(node) {
+        if (services.isReactComponent?.(node)) {
+          // Handle React components
+        }
+      }
+    };
+  }
+};
+```
+
+## Creating Your Parser
+
+<Steps>
+  <Step title="Set Up Project">
+    Create a new npm package:
+    
+    ```bash
+    mkdir eslint-parser-custom
+    cd eslint-parser-custom
+    npm init -y
+    ```
+  </Step>
+  
+  <Step title="Install Dependencies">
+    ```bash
+    npm install espree
+    ```
+  </Step>
+  
+  <Step title="Implement Parser">
+    Create `index.js`:
+    
+    ```javascript
+    const espree = require("espree");
+    const pkg = require("./package.json");
+    
+    module.exports = {
+      meta: {
+        name: pkg.name,
+        version: pkg.version
+      },
+      
+      parseForESLint(code, options) {
+        const ast = espree.parse(code, {
+          ecmaVersion: options.ecmaVersion || "latest",
+          sourceType: options.sourceType || "module",
+          ecmaFeatures: options.ecmaFeatures || {},
+          tokens: true,
+          comment: true
+        });
+        
+        return { ast };
+      }
+    };
+    ```
+  </Step>
+  
+  <Step title="Test Parser">
+    Create a test file:
+    
+    ```javascript test.js
+    const parser = require("./index");
+    
+    const code = "const x = 1;";
+    const result = parser.parseForESLint(code, {});
+    
+    console.log(result.ast);
+    ```
+  </Step>
+</Steps>
+
+## Packaging and Publishing
+
+<Steps>
+  <Step title="Update package.json">
+    ```json package.json
+    {
+      "name": "eslint-parser-myparser",
+      "version": "1.0.0",
+      "main": "index.js",
+      "keywords": ["eslint", "parser", "eslintparser"],
+      "peerDependencies": {
+        "eslint": ">=9.0.0"
+      }
+    }
+    ```
+  </Step>
+  
+  <Step title="Publish to npm">
+    ```bash
+    npm publish
+    ```
+  </Step>
+  
+  <Step title="Use in Projects">
+    Install:
+    ```bash
+    npm install --save-dev eslint-parser-myparser
+    ```
+    
+    Configure:
+    ```javascript eslint.config.js
+    import myparser from "eslint-parser-myparser";
+    
+    export default [
+      {
+        languageOptions: {
+          parser: myparser
+        }
+      }
+    ];
+    ```
+  </Step>
+</Steps>
+
+## Using a Custom Parser
+
+Configure ESLint to use your parser:
+
+<CodeGroup>
+```javascript eslint.config.js (Flat Config)
+import customParser from "eslint-parser-custom";
+
+export default [
+  {
+    files: ["**/*.js"],
+    languageOptions: {
+      parser: customParser,
+      parserOptions: {
+        ecmaVersion: 2024,
+        sourceType: "module"
+      }
+    }
+  }
+];
+```
+
+```javascript .eslintrc.js (Legacy)
+module.exports = {
+  parser: "eslint-parser-custom",
+  parserOptions: {
+    ecmaVersion: 2024,
+    sourceType: "module"
+  }
+};
+```
+</CodeGroup>
+
+## Parser Options
+
+Parsers receive options from the configuration:
+
+```javascript eslint.config.js
+export default [
+  {
+    languageOptions: {
+      parser: customParser,
+      parserOptions: {
+        // Standard options
+        ecmaVersion: 2024,
+        sourceType: "module",
+        ecmaFeatures: {
+          jsx: true,
+          globalReturn: false
+        },
+        
+        // Custom options for your parser
+        customOption: true,
+        anotherOption: "value"
+      }
+    }
+  }
+];
+```
+
+Access in parser:
+
+```javascript
+parseForESLint(code, options) {
+  const ecmaVersion = options.ecmaVersion;
+  const customOption = options.customOption;
+  
+  // Use options...
+}
+```
+
+## Real-World Example: TypeScript Parser
+
+Study `@typescript-eslint/parser` for a complete implementation:
+
+```javascript
+// Simplified structure
+module.exports = {
+  parseForESLint(code, options) {
+    // Parse TypeScript
+    const tsProgram = createProgram(code, options);
+    const ast = convertToESTree(tsProgram);
+    
+    // Provide TypeScript services
+    return {
+      ast,
+      services: {
+        program: tsProgram,
+        getTypeAtLocation(node) {
+          // Return TypeScript type
+        }
+      },
+      scopeManager,
+      visitorKeys
+    };
+  }
+};
+```
+
+## Testing Strategies
+
+### Unit Tests
+
+```javascript
+const assert = require("assert");
+const parser = require("./index");
+
+describe("Custom Parser", () => {
+  it("should parse simple code", () => {
+    const result = parser.parseForESLint("const x = 1;", {});
+    
+    assert.strictEqual(result.ast.type, "Program");
+    assert.strictEqual(result.ast.body.length, 1);
+  });
+  
+  it("should include tokens", () => {
+    const result = parser.parseForESLint("const x = 1;", {});
+    
+    assert(Array.isArray(result.ast.tokens));
+    assert(result.ast.tokens.length > 0);
+  });
+  
+  it("should handle custom syntax", () => {
+    const code = "// Custom syntax";
+    const result = parser.parseForESLint(code, {
+      customOption: true
+    });
+    
+    assert(result.ast);
+  });
+});
+```
+
+### Integration Tests
+
+Test with ESLint:
+
+```javascript
+const { ESLint } = require("eslint");
+const parser = require("./index");
+
+const eslint = new ESLint({
+  overrideConfig: {
+    languageOptions: {
+      parser
+    },
+    rules: {
+      "no-unused-vars": "error"
+    }
+  }
+});
+
+const results = await eslint.lintText("const x = 1;");
+console.log(results);
+```
+
+## Performance Considerations
+
+<Warning>
+Parsers run on every file. Optimize for performance:
+
+- **Cache parse results** when possible
+- **Reuse AST nodes** - don't create unnecessary objects
+- **Minimize memory allocations** in hot paths
+- **Profile with large files** to find bottlenecks
+</Warning>
+
+### Benchmarking
+
+```javascript
+const { performance } = require("perf_hooks");
+
+const code = fs.readFileSync("large-file.js", "utf8");
+const iterations = 100;
+
+const start = performance.now();
+for (let i = 0; i < iterations; i++) {
+  parser.parseForESLint(code, {});
+}
+const end = performance.now();
+
+console.log(`Average: ${(end - start) / iterations}ms`);
+```
+
+## Common Patterns
+
+### Wrapping Existing Parser
+
+```javascript
+const espree = require("espree");
+
+module.exports = {
+  parseForESLint(code, options) {
+    // Pre-process code
+    const processedCode = preprocess(code);
+    
+    // Parse with existing parser
+    const ast = espree.parse(processedCode, options);
+    
+    // Post-process AST
+    postprocessAST(ast);
+    
+    return { ast };
+  }
+};
+```
+
+### Adding Custom Nodes
+
+```javascript
+parseForESLint(code, options) {
+  const ast = baseParser.parse(code, options);
+  
+  // Add custom node type
+  traverse(ast, {
+    enter(node) {
+      if (isCustomPattern(node)) {
+        node.type = "CustomNode";
+        node.customProperty = extractData(node);
+      }
+    }
+  });
+  
+  return {
+    ast,
+    visitorKeys: {
+      ...defaultVisitorKeys,
+      CustomNode: ["left", "right", "customProperty"]
+    }
+  };
+}
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Parser not found">
+    Ensure the parser is installed and correctly imported:
+    
+    ```bash
+    npm list eslint-parser-custom
+    ```
+  </Accordion>
+  
+  <Accordion title="Invalid AST structure">
+    Verify all nodes have required properties:
+    - `type`
+    - `range`
+    - `loc`
+    
+    Check that `Program` has `tokens` and `comments`.
+  </Accordion>
+  
+  <Accordion title="Scope analysis errors">
+    If providing custom `scopeManager`, ensure it:
+    - Implements required methods
+    - Correctly tracks variable declarations
+    - Resolves references properly
+  </Accordion>
+  
+  <Accordion title="Performance issues">
+    Profile your parser:
+    
+    ```javascript
+    console.time("parse");
+    const result = parser.parseForESLint(code, options);
+    console.timeEnd("parse");
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Resources
+
+<CardGroup cols={2}>
+  <Card title="@typescript-eslint/parser" icon="github" href="https://github.com/typescript-eslint/typescript-eslint/tree/main/packages/parser">
+    Reference implementation for TypeScript
+  </Card>
+  
+  <Card title="ESTree Specification" icon="book" href="https://github.com/estree/estree">
+    Official AST specification
+  </Card>
+  
+  <Card title="Espree" icon="github" href="https://github.com/eslint/js/tree/main/packages/espree">
+    ESLint's default JavaScript parser
+  </Card>
+  
+  <Card title="Configure a Parser" icon="gear" href="../use/configure/parser">
+    User guide for parser configuration
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Custom Rules" icon="gavel" href="./custom-rules">
+    Build rules that use parser services
+  </Card>
+  
+  <Card title="Create a Plugin" icon="plug" href="./plugins">
+    Package parser with rules and configs
+  </Card>
+</CardGroup>
