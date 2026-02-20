@@ -85,6 +85,13 @@
               "api/config/define-config",
               "api/config/global-ignores"
             ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "api/universal",
+              "api/use-at-your-own-risk"
+            ]
           }
         ]
       },

@@ -10,7 +10,7 @@ The ESLint Node.js API allows you to programmatically lint JavaScript code and i
 ESLint exports the following modules from `eslint`:
 
 ```javascript
-const { ESLint, Linter, RuleTester, SourceCode } = require("eslint");
+const { ESLint, Linter, RuleTester, SourceCode, loadESLint } = require("eslint");
 ```
 
 ## Primary Classes
@@ -56,6 +56,23 @@ The `SourceCode` class represents parsed source code. It provides:
 - Methods for querying code structure
 
 [Learn more about SourceCode →](/api/source-code)
+
+### loadESLint
+
+The `loadESLint` function is an async function that returns the ESLint constructor. It's primarily useful for dynamic imports and compatibility scenarios.
+
+```javascript
+const { loadESLint } = require("eslint");
+
+async function main() {
+  const ESLintClass = await loadESLint();
+  const eslint = new ESLintClass();
+}
+```
+
+<Note>
+In most cases, you can import ESLint directly. The `loadESLint` function is mainly for backward compatibility with older versions.
+</Note>
 
 ## Configuration API
 

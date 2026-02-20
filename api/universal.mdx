@@ -1,0 +1,220 @@
+---
+title: Universal Build
+description: Browser-compatible ESLint Linter for client-side linting
+---
+
+## Overview
+
+The `eslint/universal` export provides a browser-compatible version of the ESLint Linter. This build is designed for client-side JavaScript environments where Node.js-specific features are not available.
+
+## Import Path
+
+```javascript
+import { Linter } from "eslint/universal";
+```
+
+Or using CommonJS:
+
+```javascript
+const { Linter } = require("eslint/universal");
+```
+
+## What's Included
+
+The universal build exports only the **Linter** class, which is the core linting engine without file system or configuration file dependencies.
+
+<ParamField path="Linter" type="class">
+  Core linting engine that works in browser environments
+</ParamField>
+
+## Differences from Node.js Build
+
+The universal build differs from the main ESLint package:
+
+| Feature | Main Package | Universal Build |
+|---------|--------------|-----------------|
+| ESLint class | ✅ Yes | ❌ No |
+| Linter class | ✅ Yes | ✅ Yes |
+| File system access | ✅ Yes | ❌ No |
+| Config file loading | ✅ Yes | ❌ No |
+| RuleTester | ✅ Yes | ❌ No |
+| SourceCode | ✅ Yes | ❌ No |
+| Browser compatible | ❌ No | ✅ Yes |
+
+## Usage Example
+
+```javascript
+import { Linter } from "eslint/universal";
+
+const linter = new Linter();
+
+// Define configuration inline
+const config = {
+  rules: {
+    semi: "error",
+    quotes: ["error", "double"]
+  }
+};
+
+// Lint some code
+const code = "const x = 'single quotes'";
+const messages = linter.verify(code, config);
+
+console.log(messages);
+// [
+//   {
+//     ruleId: 'quotes',
+//     severity: 2,
+//     message: "Strings must use doublequote.",
+//     line: 1,
+//     column: 11
+//   }
+// ]
+```
+
+## Browser Integration
+
+<Steps>
+  <Step title="Include the bundle">
+    Use a bundler (webpack, rollup, esbuild) to include `eslint/universal` in your browser bundle:
+
+    ```javascript
+    import { Linter } from "eslint/universal";
+    ```
+  </Step>
+
+  <Step title="Create a linter instance">
+    Instantiate the Linter in your browser code:
+
+    ```javascript
+    const linter = new Linter();
+    ```
+  </Step>
+
+  <Step title="Configure rules">
+    Define rules inline (no config file loading):
+
+    ```javascript
+    const config = {
+      languageOptions: {
+        ecmaVersion: 2022,
+        sourceType: "module"
+      },
+      rules: {
+        "no-unused-vars": "warn",
+        "no-console": "error"
+      }
+    };
+    ```
+  </Step>
+
+  <Step title="Lint code">
+    Pass code strings directly to the linter:
+
+    ```javascript
+    const results = linter.verify(userCode, config);
+    displayResults(results);
+    ```
+  </Step>
+</Steps>
+
+## Online Code Editor Example
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESLint in Browser</title>
+</head>
+<body>
+  <textarea id="code" rows="10" cols="50">
+const x = 'hello';
+console.log(x)
+  </textarea>
+  <button onclick="lintCode()">Lint Code</button>
+  <div id="results"></div>
+
+  <script type="module">
+    import { Linter } from "eslint/universal";
+    
+    const linter = new Linter();
+    
+    window.lintCode = function() {
+      const code = document.getElementById("code").value;
+      const config = {
+        rules: {
+          semi: "error",
+          "no-console": "warn"
+        }
+      };
+      
+      const messages = linter.verify(code, config);
+      
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = messages.map(msg => 
+        `<p>Line ${msg.line}: ${msg.message}</p>`
+      ).join("");
+    };
+  </script>
+</body>
+</html>
+```
+
+## Use Cases
+
+The universal build is ideal for:
+
+- **Online code editors** (like CodeSandbox, StackBlitz)
+- **Browser-based IDEs**
+- **Educational platforms** teaching JavaScript
+- **Static site generators** with client-side linting
+- **Progressive web apps** with code editing features
+
+## Limitations
+
+<Warning>
+The universal build cannot:
+
+- Load configuration files from the file system
+- Read `.eslintignore` files
+- Auto-discover plugins
+- Access the file system
+- Use the ESLint class or RuleTester
+</Warning>
+
+## API Documentation
+
+For detailed Linter API documentation, see:
+
+<Card title="Linter Class API" icon="code" href="/api/linter">
+  Complete Linter class reference with all methods and options
+</Card>
+
+## Bundle Size Considerations
+
+The universal build is optimized for browser use but still includes all core ESLint functionality:
+
+- **Core linting engine**: AST parsing, rule execution, message generation
+- **Built-in rules**: All 294+ ESLint rules are included
+- **Traversal and scope analysis**: Full AST traversal and scope management
+
+<Tip>
+Consider using tree-shaking and dynamic imports to reduce bundle size if you only need specific rules.
+</Tip>
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="Linter Class" icon="brackets-curly" href="/api/linter">
+    Full Linter API reference
+  </Card>
+  <Card title="Core Concepts" icon="book" href="/use/core-concepts">
+    Understand how ESLint works
+  </Card>
+  <Card title="Rule Configuration" icon="gear" href="/use/rule-configuration">
+    Configure linting rules
+  </Card>
+  <Card title="Custom Rules" icon="wand-magic-sparkles" href="/extend/custom-rules">
+    Create custom rules
+  </Card>
+</CardGroup>

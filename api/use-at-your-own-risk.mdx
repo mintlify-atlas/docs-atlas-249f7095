@@ -1,0 +1,139 @@
+---
+title: Use at Your Own Risk
+description: Unsupported ESLint APIs that may change or be removed at any time
+---
+
+<Warning>
+These APIs are **not officially supported** by ESLint. They may change or be removed at any time without notice. Use them at your own risk.
+</Warning>
+
+## Overview
+
+The `eslint/use-at-your-own-risk` module exports internal APIs that are not part of the official ESLint API. These exports are provided for advanced use cases and tooling integration, but come with no stability guarantees.
+
+## Import Path
+
+```javascript
+const { builtinRules, shouldUseFlatConfig } = require("eslint/use-at-your-own-risk");
+```
+
+## Exports
+
+### builtinRules
+
+A Map containing all built-in ESLint rules.
+
+<ParamField path="builtinRules" type="Map<string, Rule>">
+  A Map where keys are rule names and values are rule implementations
+</ParamField>
+
+**Example:**
+
+```javascript
+const { builtinRules } = require("eslint/use-at-your-own-risk");
+
+// Get a specific rule
+const semiRule = builtinRules.get("semi");
+
+// List all rule names
+const ruleNames = Array.from(builtinRules.keys());
+console.log(ruleNames); // ["semi", "quotes", "no-unused-vars", ...]
+
+// Check if a rule exists
+if (builtinRules.has("no-console")) {
+  console.log("Rule exists");
+}
+
+// Iterate over all rules
+for (const [ruleName, ruleModule] of builtinRules) {
+  console.log(ruleName, ruleModule.meta);
+}
+```
+
+**Use cases:**
+
+- Building custom linting tools
+- Introspecting rule metadata
+- Creating rule documentation generators
+- Testing rule implementations
+
+---
+
+### shouldUseFlatConfig
+
+A function that determines whether the flat config system should be used.
+
+<ParamField path="shouldUseFlatConfig" type="function">
+  Returns a boolean indicating if flat config should be used
+</ParamField>
+
+**Signature:**
+
+```typescript
+function shouldUseFlatConfig(): boolean
+```
+
+**Returns:**
+
+<ResponseField name="result" type="boolean">
+  `true` if flat config should be used, `false` otherwise
+</ResponseField>
+
+**Example:**
+
+```javascript
+const { shouldUseFlatConfig } = require("eslint/use-at-your-own-risk");
+
+if (shouldUseFlatConfig()) {
+  console.log("Using flat config (eslint.config.js)");
+} else {
+  console.log("Using legacy config (.eslintrc.*)");
+}
+```
+
+<Note>
+As of ESLint v9+, flat config is the default configuration system. This function is primarily useful for tools that need to support both configuration formats.
+</Note>
+
+## Why "Use at Your Own Risk"?
+
+These APIs are marked as unsupported because:
+
+1. **No Stability Guarantee** - They may change in minor or patch releases
+2. **No Deprecation Policy** - They can be removed without prior notice
+3. **Implementation Details** - They expose internal implementation that may be refactored
+4. **No Documentation Maintenance** - Official docs may become outdated
+
+## When to Use
+
+Consider using these APIs only if:
+
+- You're building development tools or plugins
+- You need access to internal ESLint functionality
+- You're willing to update your code when ESLint changes
+- The official API doesn't provide what you need
+
+## Alternatives
+
+Before using these unsupported APIs, consider:
+
+- **For rule access**: Use the official ESLint class and configuration system
+- **For config detection**: Use the ESLint class which handles config automatically
+- **For custom tooling**: Check if the official API can be extended
+
+## Related
+
+<CardGroup cols={2}>
+  <Card title="ESLint Class" icon="code" href="/api/eslint">
+    Official ESLint API
+  </Card>
+  <Card title="Linter Class" icon="brackets-curly" href="/api/linter">
+    Core linting engine
+  </Card>
+  <Card title="Custom Rules" icon="wand-magic-sparkles" href="/extend/custom-rules">
+    Create custom rules
+  </Card>
+  <Card title="Plugins" icon="plug" href="/extend/plugins">
+    Build plugins
+  </Card>
+</CardGroup>
