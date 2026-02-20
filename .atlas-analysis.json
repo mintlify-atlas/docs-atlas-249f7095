@@ -1,0 +1,156 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "ESLint",
+  "projectDescription": "A pluggable and configurable linter tool for identifying and reporting on patterns in JavaScript code.",
+  "theme": "aspen",
+  "primaryColor": "#4B32C3",
+  "lightColor": "#8B7FF4",
+  "darkColor": "#2D1B7A",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Using ESLint",
+            "pages": [
+              "use/command-line",
+              "use/configuration",
+              "use/core-concepts",
+              "use/ignoring-code",
+              "use/rule-configuration",
+              "use/formatters",
+              "use/integrations"
+            ]
+          },
+          {
+            "group": "Extending ESLint",
+            "pages": [
+              "extend/overview",
+              "extend/custom-rules",
+              "extend/custom-parsers",
+              "extend/custom-processors",
+              "extend/custom-formatters",
+              "extend/plugins",
+              "extend/shareable-configs"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/migrate-to-10",
+              "guides/configure-rules",
+              "guides/troubleshooting",
+              "guides/version-support"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Node.js API",
+            "pages": [
+              "api/overview",
+              "api/eslint",
+              "api/linter",
+              "api/rule-tester",
+              "api/source-code"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "api/config/define-config",
+              "api/config/global-ignores"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Rules",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "rules/index",
+              "rules/categories"
+            ]
+          },
+          {
+            "group": "Possible Problems",
+            "pages": [
+              "rules/array-callback-return",
+              "rules/no-await-in-loop",
+              "rules/no-constant-binary-expression",
+              "rules/no-constructor-return",
+              "rules/no-promise-executor-return",
+              "rules/no-self-compare",
+              "rules/no-unmodified-loop-condition",
+              "rules/no-unreachable-loop",
+              "rules/no-unused-private-class-members",
+              "rules/no-use-before-define"
+            ]
+          },
+          {
+            "group": "Best Practices",
+            "pages": [
+              "rules/block-scoped-var",
+              "rules/curly",
+              "rules/default-case",
+              "rules/eqeqeq",
+              "rules/no-alert",
+              "rules/no-caller",
+              "rules/no-eval",
+              "rules/no-implied-eval",
+              "rules/no-return-assign",
+              "rules/prefer-promise-reject-errors"
+            ]
+          },
+          {
+            "group": "Stylistic",
+            "pages": [
+              "rules/array-bracket-spacing",
+              "rules/brace-style",
+              "rules/camelcase",
+              "rules/comma-dangle",
+              "rules/indent",
+              "rules/quotes",
+              "rules/semi"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Pluggable architecture with 294+ built-in rules",
+    "Flat configuration system for flexible setup",
+    "Auto-fixing capabilities for automated code corrections",
+    "Custom rule development support",
+    "Multiple formatters for various output formats",
+    "CLI and programmatic Node.js API",
+    "Language extensibility for non-JavaScript files",
+    "Real-time linting integration with editors"
+  ],
+  "publicApiSurface": [
+    "ESLint - Main class for linting files",
+    "Linter - Core linting engine",
+    "RuleTester - Test utility for custom rules",
+    "SourceCode - Source code representation",
+    "loadESLint - Async loader for ESLint",
+    "defineConfig - Configuration helper",
+    "globalIgnores - Global ignore patterns helper",
+    "builtinRules - Collection of all built-in rules",
+    "eslint (CLI) - Command-line interface"
+  ]
+}
